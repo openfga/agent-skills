@@ -1,15 +1,15 @@
 ---
 name: openfga
-description: OpenFGA authorization modeling best practices and guidelines. This skill should be used when authoring, reviewing, or refactoring OpenFGA authorization models. Triggers on tasks involving OpenFGA models, relationship definitions, permission structures, .fga files, or .fga.yaml test files.
+description: OpenFGA authorization modeling best practices and guidelines. This skill should be used when authoring, reviewing, or refactoring OpenFGA authorization models. Triggers on tasks involving OpenFGA models, relationship definitions, permission structures, .fga files, .fga.yaml test files, or OpenFGA SDK usage in JavaScript, TypeScript, Go, Python, Java, or .NET.
 license: MIT
 metadata:
   author: openfga
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # OpenFGA Best Practices
 
-Comprehensive guide for authoring OpenFGA authorization models, maintained for AI agents and developers. Contains rules across 6 categories covering core concepts, relationship patterns, testing, custom roles, and model optimization.
+Comprehensive guide for authoring OpenFGA authorization models and using OpenFGA SDKs, maintained for AI agents and developers. Contains rules across 7 categories covering core concepts, relationship patterns, testing, custom roles, model optimization, and language-specific SDK usage.
 
 ## When to Apply
 
@@ -20,6 +20,7 @@ Reference these guidelines when:
 - Testing models with `.fga.yaml` files
 - Implementing custom roles
 - Reviewing or refactoring existing models
+- Integrating OpenFGA with JavaScript/TypeScript, Go, Python, Java, or .NET applications
 
 ## Rule Categories by Priority
 
@@ -31,6 +32,7 @@ Reference these guidelines when:
 | 4 | Model Design | HIGH | `design-` |
 | 5 | Custom Roles | MEDIUM | `roles-` |
 | 6 | Optimization | MEDIUM | `optimize-` |
+| 7 | SDK Integration | HIGH | `sdk-` |
 
 ## Quick Reference
 
@@ -79,6 +81,14 @@ Reference these guidelines when:
 - `optimize-simplify` - Remove unused types and relations
 - `optimize-tuples` - Use indirect relationships to reduce tuple count
 - `optimize-type-restrictions` - Apply appropriate type restrictions
+
+### 7. SDK Integration (HIGH)
+
+- `sdk-javascript` - JavaScript/TypeScript SDK usage
+- `sdk-go` - Go SDK usage
+- `sdk-python` - Python SDK usage (async and sync)
+- `sdk-java` - Java SDK usage
+- `sdk-dotnet` - .NET SDK usage
 
 ## How to Use
 
