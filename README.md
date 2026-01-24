@@ -64,8 +64,26 @@ openfga/
     ├── design-*.md   # Design pattern rules
     ├── roles-*.md    # Custom role rules
     ├── optimize-*.md # Optimization rules
+    ├── workflow-*.md # Workflow rules
     └── sdk-*.md      # SDK-specific rules
 ```
+
+## Rebuilding AGENTS.md
+
+The `AGENTS.md` file is generated from the individual rule files in `rules/`. To regenerate it after making changes:
+
+```bash
+node scripts/build-agents-md.js
+```
+
+The script reads:
+- Section order and rule order from `skills/openfga/SKILL.md`
+- Individual rule content from `skills/openfga/rules/*.md`
+
+When adding new rules:
+1. Create the rule file in `rules/` with the appropriate prefix (e.g., `core-`, `relation-`, `test-`)
+2. Add the rule to the corresponding section in `SKILL.md` under Quick Reference
+3. Run the build script to regenerate `AGENTS.md`
 
 ## Example Usage
 
