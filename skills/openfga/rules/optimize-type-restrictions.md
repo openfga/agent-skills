@@ -27,6 +27,23 @@ type document
     define owner: [user]                # Only users can own
 ```
 
+If business rules imply that a resource can belong to different kind of parents, then it is OK to represent it in the model:
+
+```dsl.openfga
+type organization
+  define member: [user]
+type business_unit
+  define member: [user]
+
+type document
+  relations
+    define parent_entity: [organization, business_unit]
+    define parent_folder: [folder]      # Only folders can be parents
+    define owner: [user]                # Only users can own
+    define can_view: owner or member from parent_entity
+```
+
+
 **Common type restriction patterns:**
 
 ```dsl.openfga

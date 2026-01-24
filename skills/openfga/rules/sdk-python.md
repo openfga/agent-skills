@@ -82,6 +82,40 @@ configuration = ClientConfiguration(
 )
 ```
 
+### Load Authorization Model from File
+
+**From JSON file:**
+
+```python
+import json
+from openfga_sdk import WriteAuthorizationModelRequest
+
+# Read JSON file
+with open('model.json', 'r') as f:
+    model_json = json.load(f)
+
+# Create request from JSON
+body = WriteAuthorizationModelRequest(
+    schema_version=model_json.get('schema_version', '1.1'),
+    type_definitions=model_json['type_definitions'],
+    conditions=model_json.get('conditions')
+)
+
+response = await fga_client.write_authorization_model(body)
+# response.authorization_model_id contains the new model ID
+```
+
+**From DSL (.fga) file:**
+
+The Python SDK does not include a built-in DSL parser. Convert DSL files to JSON using the OpenFGA CLI, then load the JSON file.
+
+```bash
+# Convert DSL to JSON using the FGA CLI
+fga model transform --input model.fga --output model.json
+```
+
+Then load the JSON file as shown above.
+
 ### Check Permission
 
 ```python

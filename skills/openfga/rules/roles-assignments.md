@@ -7,7 +7,7 @@ tags: roles, role-assignments, resource-specific, flexible
 
 ## Role Assignments for Resource-Specific Roles
 
-For roles that can have different members on different resources. DO NOT use this for top-level types like organizations.
+For roles that can have different members on different levels of a resource hierarchy. DO NOT use this for top-level types like organizations.
 
 **Model:**
 

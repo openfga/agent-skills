@@ -33,6 +33,7 @@ Reference these guidelines when:
 | 5 | Custom Roles | MEDIUM | `roles-` |
 | 6 | Optimization | MEDIUM | `optimize-` |
 | 7 | SDK Integration | HIGH | `sdk-` |
+| 8 | Workflow | CRITICAL | `workflow-` |
 
 ## Quick Reference
 
@@ -52,8 +53,17 @@ Reference these guidelines when:
 - `relation-usersets` - Use `type#relation` for group-based access
 - `relation-conditions` - Use CEL conditions for contextual authorization
 - `relation-wildcards` - Use `type:*` for public access carefully
+- `relation-wildcards-as-booleans` - To use `type:*`to model boolan attributes
 
-### 3. Testing & Validation (HIGH)
+### 3. Model Design (HIGH)
+
+- `design-permissions` - Define `can_*` relations for permissions
+- `design-hierarchy` - Model parent-child relationships correctly
+- `design-organization` - Structure organization-level access
+- `design-naming` - Use clear, consistent naming conventions
+- `design-modules` - Split a model in modules for collaboration among multiple teams.
+
+### 4. Testing & Validation (HIGH)
 
 - `test-fga-yaml` - Structure tests in `.fga.yaml` files
 - `test-check-assertions` - Write check assertions for permission verification
@@ -61,13 +71,6 @@ Reference these guidelines when:
 - `test-list-users` - Test list_users queries
 - `test-conditions` - Test conditional relationships with context
 - `test-cli` - Use OpenFGA CLI for model testing
-
-### 4. Model Design (HIGH)
-
-- `design-permissions` - Define `can_*` relations for permissions
-- `design-hierarchy` - Model parent-child relationships correctly
-- `design-organization` - Structure organization-level access
-- `design-naming` - Use clear, consistent naming conventions
 
 ### 5. Custom Roles (MEDIUM)
 
@@ -89,6 +92,10 @@ Reference these guidelines when:
 - `sdk-python` - Python SDK usage (async and sync)
 - `sdk-java` - Java SDK usage
 - `sdk-dotnet` - .NET SDK usage
+
+### 8. Workflow (CRITICAL)
+
+- `workflow-validate` - Always validate models before delivery
 
 ## How to Use
 

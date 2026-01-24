@@ -53,6 +53,15 @@ model_file: ./model.fga
 tuple_file: ./tuples.yaml
 ```
 
+**Alternative when using Modular Models:**
+
+```yaml
+name: Model Tests
+model_file: ./fga.mod
+tuple_file: ./tuples.yaml
+```
+
+
 **Multiple tuple files:**
 
 ```yaml

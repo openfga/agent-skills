@@ -7,7 +7,7 @@ tags: relations, wildcards, public-access
 
 ## Wildcards for Public Access
 
-Wildcards (`type:*`) grant access to all objects of a type.
+Wildcards (`type:*`) grant access to all instances of a user type to an specfic object.
 
 **Example (public documents):**
 
@@ -41,6 +41,3 @@ type document
     define editor: [user:*]  # Too permissive for editing
 ```
 
-**Use sparingly:** Wildcards should be reserved for genuinely public resources. Prefer explicit grants or group-based access for most scenarios.
-
-**Security consideration:** Once a wildcard tuple is written, ALL users of that type have access. There's no way to exclude specific users from a wildcard grant.

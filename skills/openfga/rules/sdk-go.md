@@ -193,15 +193,73 @@ data, err := fgaClient.Write(context.Background()).
     Execute()
 ```
 
-### Load Model from DSL File
+### Load Authorization Model from File
+
+**From JSON file:**
 
 ```go
-import "github.com/openfga/language/pkg/go/transformer"
+import (
+    "encoding/json"
+    "os"
+    openfga "github.com/openfga/go-sdk"
+)
 
-dslContent, _ := os.ReadFile("model.fga")
-jsonModel, _ := transformer.TransformDSLToJSON(string(dslContent))
+// Read JSON file
+jsonContent, err := os.ReadFile("model.json")
+if err != nil {
+    log.Fatal(err)
+}
+
+// Parse into request body
 var body openfga.WriteAuthorizationModelRequest
-json.Unmarshal([]byte(jsonModel), &body)
+if err := json.Unmarshal(jsonContent, &body); err != nil {
+    log.Fatal(err)
+}
+
+// Write the model
+response, err := fgaClient.WriteAuthorizationModel(context.Background()).
+    Body(body).
+    Execute()
+```
+
+**From DSL (.fga) file:**
+
+Install the language transformer:
+
+```bash
+go get github.com/openfga/language/pkg/go/transformer
+```
+
+```go
+import (
+    "encoding/json"
+    "os"
+    "github.com/openfga/language/pkg/go/transformer"
+    openfga "github.com/openfga/go-sdk"
+)
+
+// Read DSL file
+dslContent, err := os.ReadFile("model.fga")
+if err != nil {
+    log.Fatal(err)
+}
+
+// Transform DSL to JSON
+jsonModel, err := transformer.TransformDSLToJSON(string(dslContent))
+if err != nil {
+    log.Fatal(err)
+}
+
+// Parse into request body
+var body openfga.WriteAuthorizationModelRequest
+if err := json.Unmarshal([]byte(jsonModel), &body); err != nil {
+    log.Fatal(err)
+}
+
+// Write the model
+response, err := fgaClient.WriteAuthorizationModel(context.Background()).
+    Body(body).
+    Execute()
 ```
 
 ### Contextual Tuples

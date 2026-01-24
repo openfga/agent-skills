@@ -9,6 +9,10 @@ tags: testing, cli, validation, workflow
 
 Use the OpenFGA CLI to validate and test your models.
 
+**MANDATORY**: Always run `fga model test` after creating or modifying any `.fga` or `.fga.yaml` file. Do not consider any OpenFGA task complete until tests pass.
+
+Use the OpenFGA CLI to validate and test your models.
+
 **Installation:**
 
 ```bash
@@ -49,10 +53,9 @@ fga model transform --input model.json --output model.fga
 
 ```bash
 $ fga model test --tests authorization.fga.yaml
-# PASSED: Owner permissions
-# PASSED: List accessible documents
-# PASSED: Conditional access tests
-# 3/3 tests passed
+# Test Summary #
+Tests 1/1 passing
+Checks 5/5 passing
 ```
 
 **CI/CD integration:**
@@ -61,6 +64,8 @@ $ fga model test --tests authorization.fga.yaml
 # Fail the build if tests don't pass
 fga model test --tests authorization.fga.yaml || exit 1
 ```
+
+You can also use the available GitHub actions. 
 
 **Verbose output for debugging:**
 
