@@ -64,6 +64,49 @@ const fgaClient = new OpenFgaClient({
 });
 ```
 
+### Load Authorization Model from File
+
+**From JSON file:**
+
+```typescript
+const fs = require('fs');
+
+// Read and parse JSON model
+const modelJson = JSON.parse(fs.readFileSync('model.json', 'utf8'));
+
+const { authorization_model_id } = await fgaClient.writeAuthorizationModel(modelJson);
+```
+
+**From DSL (.fga) file:**
+
+Use the `@openfga/syntax-transformer` package to convert DSL to JSON:
+
+```bash
+npm install @openfga/syntax-transformer
+```
+
+```typescript
+const fs = require('fs');
+const { transformer } = require('@openfga/syntax-transformer');
+
+// Read DSL file and transform to JSON
+const dslContent = fs.readFileSync('model.fga', 'utf8');
+const modelJson = transformer.transformDSLToJSON(dslContent);
+
+const { authorization_model_id } = await fgaClient.writeAuthorizationModel(
+  JSON.parse(modelJson)
+);
+```
+
+**Alternative: Use CLI for conversion**
+
+```bash
+# Convert DSL to JSON using the FGA CLI
+fga model transform --input model.fga --output model.json
+```
+
+Then load the JSON file as shown above.
+
 ### Check Permission
 
 ```typescript

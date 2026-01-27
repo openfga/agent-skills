@@ -2,7 +2,7 @@
 title: Combining Static and Custom Roles
 impact: HIGH
 impactDescription: practical role systems
-tags: roles, static-roles, custom-roles, combination
+tags: roles, static-roles, custom-roles, user-defined
 ---
 
 ## Combining Static and Custom Roles

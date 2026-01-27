@@ -19,6 +19,8 @@ type document
     define viewer: [user]
     define commenter: [user]     # Never used in application
     define legacy_admin: [user]  # Deprecated, no tuples exist
+
+    define can_view : owner or editor or viewer
 ```
 
 **Correct (minimal model):**
@@ -29,6 +31,7 @@ type document
     define owner: [user]
     define editor: [user]
     define viewer: [user]
+    define can_view : owner or editor or viewer
 ```
 
 **Audit checklist:**

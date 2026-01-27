@@ -69,6 +69,33 @@ var configuration = new ClientConfiguration() {
 var fgaClient = new OpenFgaClient(configuration);
 ```
 
+### Load Authorization Model from File
+
+**From JSON file:**
+
+```csharp
+using System.Text.Json;
+using OpenFga.Sdk.Model;
+
+// Read and parse JSON file
+var jsonContent = await File.ReadAllTextAsync("model.json");
+var modelJson = JsonSerializer.Deserialize<WriteAuthorizationModelRequest>(jsonContent);
+
+var response = await fgaClient.WriteAuthorizationModel(modelJson);
+// response.AuthorizationModelId contains the new model ID
+```
+
+**From DSL (.fga) file:**
+
+The .NET SDK does not include a built-in DSL parser. Convert DSL files to JSON using the OpenFGA CLI, then load the JSON file.
+
+```bash
+# Convert DSL to JSON using the FGA CLI
+fga model transform --input model.fga --output model.json
+```
+
+Then load the JSON file as shown above.
+
 ### Check Permission
 
 ```csharp

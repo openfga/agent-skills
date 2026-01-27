@@ -75,6 +75,96 @@ var config = new ClientConfiguration()
 var fgaClient = new OpenFgaClient(config);
 ```
 
+### Load Authorization Model from File
+
+**From JSON file:**
+
+```java
+import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.openfga.sdk.api.model.WriteAuthorizationModelRequest;
+import java.io.File;
+
+ObjectMapper mapper = new ObjectMapper();
+
+// Read and parse JSON file
+WriteAuthorizationModelRequest body = mapper.readValue(
+    new File("model.json"),
+    WriteAuthorizationModelRequest.class
+);
+
+var response = fgaClient.writeAuthorizationModel(body).get();
+// response.getAuthorizationModelId() contains the new model ID
+```
+
+**From DSL (.fga) file:**
+
+Use the `openfga-language` package to transform DSL to JSON.
+
+**Maven:**
+
+```xml
+<dependency>
+    <groupId>dev.openfga</groupId>
+    <artifactId>openfga-language</artifactId>
+    <version>0.2.0</version>
+</dependency>
+```
+
+**Gradle:**
+
+```groovy
+implementation 'dev.openfga:openfga-language:0.2.0'
+```
+
+**Transform DSL to JSON:**
+
+```java
+import dev.openfga.language.DslToJsonTransformer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.openfga.sdk.api.model.WriteAuthorizationModelRequest;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+// Read DSL file
+String dslContent = Files.readString(Path.of("model.fga"));
+
+// Transform DSL to JSON
+String jsonString = new DslToJsonTransformer().transform(dslContent);
+
+// Parse JSON into request body
+ObjectMapper mapper = new ObjectMapper();
+WriteAuthorizationModelRequest body = mapper.readValue(
+    jsonString,
+    WriteAuthorizationModelRequest.class
+);
+
+var response = fgaClient.writeAuthorizationModel(body).get();
+// response.getAuthorizationModelId() contains the new model ID
+```
+
+**Validate DSL before transforming:**
+
+```java
+import dev.openfga.language.validation.ModelValidator;
+import dev.openfga.language.errors.DslErrorsException;
+
+try {
+    ModelValidator.validateDsl(dslContent);
+} catch (DslErrorsException e) {
+    // Handle validation errors
+    System.err.println("DSL errors: " + e.getErrors());
+}
+```
+
+**Alternative: Use CLI for conversion**
+
+```bash
+# Convert DSL to JSON using the FGA CLI
+fga model transform --input model.fga --output model.json
+```
+
+Then load the JSON file as shown above.
+
 ### Check Permission
 
 ```java
