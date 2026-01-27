@@ -65,7 +65,7 @@ Checks 5/5 passing
 fga model test --tests authorization.fga.yaml || exit 1
 ```
 
-You can also use the available GitHub actions. 
+You can also use the [OpenFGA Model Test GitHub actions](https://github.com/marketplace/actions/openfga-model-testing-action). 
 
 **Verbose output for debugging:**
 
