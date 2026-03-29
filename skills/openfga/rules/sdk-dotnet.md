@@ -79,10 +79,9 @@ using OpenFga.Sdk.Model;
 
 // Read and parse JSON file
 var jsonContent = await File.ReadAllTextAsync("model.json");
-var modelJson = JsonSerializer.Deserialize<WriteAuthorizationModelRequest>(jsonContent);
+var body = ClientWriteAuthorizationModelRequest.FromJson(jsonContent);
 
-var response = await fgaClient.WriteAuthorizationModel(modelJson);
-// response.AuthorizationModelId contains the new model ID
+var response = await fgaClient.WriteAuthorizationModel(body);
 ```
 
 **From DSL (.fga) file:**
