@@ -85,8 +85,27 @@ type task
 
 This way, `task` doesn't need its own `organization` relation or tuple — it resolves the parent role by traversing up: `task` → `project` → `organization`.
 
+**Propagate all relevant parent roles, not just org-level ones:**
+
+The chaining pattern applies to any role on a parent type that is relevant to child resources — not just organization-level roles like `admin`. Roles like `owner`, `head`, `manager`, and `lead` should also be chained:
+
+```dsl.openfga
+type department
+  relations
+    define head: [user]
+
+type job
+  relations
+    define department: [department]
+    define department_head: head from department   # chains the head role
+    define can_view: department_head or recruiter
+```
+
+**Audit rule:** for each parent-child relationship, check if the parent defines roles that are meaningful to children. If so, chain them down as computed relations.
+
 **Benefits:**
 - Dramatically reduces tuple count
 - Simplifies permission management
 - Enables revoking access by deleting a single tuple
 - No redundant parent tuples on child objects
+- Parent roles like owner, head, manager are not accidentally excluded from child resources

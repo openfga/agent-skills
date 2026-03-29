@@ -7,7 +7,7 @@ tags: design, permissions, can_, best-practices
 
 ## Define Permissions with can_ Relations
 
-Define specific permissions using `can_<action>` relations that cannot be directly assigned.
+Define specific permissions using `can_<action>` relations that cannot be directly assigned. Permissions should only reference roles and computed relations — never have direct type assignments like `[user]`.
 
 **Incorrect (checking relations directly):**
 
@@ -45,11 +45,41 @@ await fga.check({ user, relation: 'can_edit', object: doc })
 await fga.check({ user, relation: 'can_delete', object: doc })
 ```
 
+**Never put direct type assignments on `can_*` relations:**
+
+`can_*` relations are permissions — they answer "can this user do X?" They should only combine roles and other permissions, never accept direct tuple assignments.
+
+**Incorrect (direct assignment on permission):**
+
+```dsl.openfga
+type product
+  relations
+    define store: [store]
+    define can_view: [user] or staff from store     # WRONG: [user] on a permission
+```
+
+This blurs the line between roles and permissions. You can't tell from the model what role grants view access — it's an anonymous direct grant.
+
+**Correct (named role for direct assignments):**
+
+```dsl.openfga
+type product
+  relations
+    define store: [store]
+    define viewer: [user]                           # role that can be assigned
+    define can_view: viewer or staff from store      # permission references the role
+```
+
+Now the model is clear: `viewer` is a role you assign, `can_view` is a permission you check. If you need to audit who can view a product, you can inspect the `viewer` role.
+
+**Rule:** if a `can_*` relation needs `[user]` or `[type#relation]`, create a named role (e.g. `viewer`, `editor`, `participant`) and reference it from the permission instead.
+
 **Benefits:**
 - Clear separation between roles and permissions
 - Permissions can combine multiple roles
 - Easier to evolve without breaking applications
 - Self-documenting model
+- Roles are auditable — you can query who has a specific role
 
 **Make permissions concentric:**
 

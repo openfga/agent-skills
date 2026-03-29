@@ -90,9 +90,48 @@ can_delete  →  can_edit  →  can_view
 
 Less restrictive permissions reference more restrictive ones via `or can_<more_restrictive>`, adding only the roles unique to that level.
 
+### Include parent roles in concentric role chains
+
+When a parent type defines a role like `owner`, include it in the child type's concentric role hierarchy rather than chaining it separately. This ensures the role cascades to all permissions automatically.
+
+**Incorrect (owner excluded from the role chain):**
+
+```dsl.openfga
+type store
+  relations
+    define owner: [user]
+    define manager: [user] or store_manager from organization
+    define staff: [user] or manager
+
+type product
+  relations
+    define store: [store]
+    define can_edit: manager from store        # owner has no access!
+```
+
+The store owner can't edit products because `owner` doesn't feed into `manager`.
+
+**Correct (owner included in the role chain):**
+
+```dsl.openfga
+type store
+  relations
+    define owner: [user]
+    define manager: [user] or owner or store_manager from organization
+    define staff: [user] or manager
+
+type product
+  relations
+    define store: [store]
+    define can_edit: manager from store        # owner gets access via manager
+```
+
+Now the owner is a manager, which is staff, so `manager from store` and `staff from store` on child types automatically include the owner.
+
 **Benefits:**
 - Fewer tuples needed
 - Consistent permission semantics
 - Easier to reason about access levels
 - Each role appears exactly once — no risk of forgetting to add a role at every level
 - Adding a new role requires changing only one permission
+- Parent roles like owner cascade through concentric chains to all child resources

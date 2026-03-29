@@ -385,12 +385,51 @@ can_delete  →  can_edit  →  can_view
 
 Less restrictive permissions reference more restrictive ones via `or can_<more_restrictive>`, adding only the roles unique to that level.
 
+**Include parent roles in concentric role chains:**
+
+When a parent type defines a role like `owner`, include it in the child type's concentric role hierarchy rather than chaining it separately. This ensures the role cascades to all permissions automatically.
+
+**Incorrect (owner excluded from the role chain):**
+
+```dsl.openfga
+type store
+  relations
+    define owner: [user]
+    define manager: [user] or store_manager from organization
+    define staff: [user] or manager
+
+type product
+  relations
+    define store: [store]
+    define can_edit: manager from store        # owner has no access!
+```
+
+The store owner can't edit products because `owner` doesn't feed into `manager`.
+
+**Correct (owner included in the role chain):**
+
+```dsl.openfga
+type store
+  relations
+    define owner: [user]
+    define manager: [user] or owner or store_manager from organization
+    define staff: [user] or manager
+
+type product
+  relations
+    define store: [store]
+    define can_edit: manager from store        # owner gets access via manager
+```
+
+Now the owner is a manager, which is staff, so `manager from store` and `staff from store` on child types automatically include the owner.
+
 **Benefits:**
 - Fewer tuples needed
 - Consistent permission semantics
 - Easier to reason about access levels
 - Each role appears exactly once — no risk of forgetting to add a role at every level
 - Adding a new role requires changing only one permission
+- Parent roles like owner cascade through concentric chains to all child resources
 
 ### 2.3 Indirect Relationships with X from Y
 
@@ -474,11 +513,30 @@ type task
 
 This way, `task` doesn't need its own `organization` relation or tuple — it resolves the parent role by traversing up: `task` → `project` → `organization`.
 
+**Propagate all relevant parent roles, not just org-level ones:**
+
+The chaining pattern applies to any role on a parent type that is relevant to child resources — not just organization-level roles like `admin`. Roles like `owner`, `head`, `manager`, and `lead` should also be chained:
+
+```dsl.openfga
+type department
+  relations
+    define head: [user]
+
+type job
+  relations
+    define department: [department]
+    define department_head: head from department   # chains the head role
+    define can_view: department_head or recruiter
+```
+
+**Audit rule:** for each parent-child relationship, check if the parent defines roles that are meaningful to children. If so, chain them down as computed relations.
+
 **Benefits:**
 - Dramatically reduces tuple count
 - Simplifies permission management
 - Enables revoking access by deleting a single tuple
 - No redundant parent tuples on child objects
+- Parent roles like owner, head, manager are not accidentally excluded from child resources
 
 ### 2.4 Usersets for Group-Based Access
 
@@ -674,7 +732,7 @@ Design patterns that lead to maintainable and correct authorization models.
 
 **Impact: HIGH (clear permission semantics)**
 
-Define specific permissions using `can_<action>` relations that cannot be directly assigned.
+Define specific permissions using `can_<action>` relations that cannot be directly assigned. Permissions should only reference roles and computed relations — never have direct type assignments like `[user]`.
 
 **Incorrect (checking relations directly):**
 
@@ -712,11 +770,41 @@ await fga.check({ user, relation: 'can_edit', object: doc })
 await fga.check({ user, relation: 'can_delete', object: doc })
 ```
 
+**Never put direct type assignments on `can_*` relations:**
+
+`can_*` relations are permissions — they answer "can this user do X?" They should only combine roles and other permissions, never accept direct tuple assignments.
+
+**Incorrect (direct assignment on permission):**
+
+```dsl.openfga
+type product
+  relations
+    define store: [store]
+    define can_view: [user] or staff from store     # WRONG: [user] on a permission
+```
+
+This blurs the line between roles and permissions. You can't tell from the model what role grants view access — it's an anonymous direct grant.
+
+**Correct (named role for direct assignments):**
+
+```dsl.openfga
+type product
+  relations
+    define store: [store]
+    define viewer: [user]                           # role that can be assigned
+    define can_view: viewer or staff from store      # permission references the role
+```
+
+Now the model is clear: `viewer` is a role you assign, `can_view` is a permission you check. If you need to audit who can view a product, you can inspect the `viewer` role.
+
+**Rule:** if a `can_*` relation needs `[user]` or `[type#relation]`, create a named role (e.g. `viewer`, `editor`, `participant`) and reference it from the permission instead.
+
 **Benefits:**
 - Clear separation between roles and permissions
 - Permissions can combine multiple roles
 - Easier to evolve without breaking applications
 - Self-documenting model
+- Roles are auditable — you can query who has a specific role
 
 **Make permissions concentric:**
 
@@ -866,10 +954,74 @@ type document
   object: document:api-spec
 ```
 
+**Propagate all relevant parent roles, not just org-level ones:**
+
+Any role defined on a parent type that is meaningful to child resources should be chained down. This applies to roles like `owner`, `head`, `manager`, `lead` — not just organization-level roles like `admin`.
+
+**Incorrect (parent role forgotten on child types):**
+
+```dsl.openfga
+type department
+  relations
+    define head: [user]
+    define can_view: head
+
+type job
+  relations
+    define department: [department]
+    define recruiter: [user]
+    define can_view: recruiter              # department head has no visibility!
+```
+
+The department head can see the department but is locked out of jobs within it.
+
+**Correct (chain the parent role down):**
+
+```dsl.openfga
+type department
+  relations
+    define head: [user]
+    define can_view: head
+
+type job
+  relations
+    define department: [department]
+    define department_head: head from department
+    define recruiter: [user]
+    define can_view: department_head or recruiter
+```
+
+**Include parent roles in concentric role hierarchies:**
+
+When a parent type defines an `owner` or similar role, include it in the child type's role hierarchy so it cascades automatically:
+
+```dsl.openfga
+type store
+  relations
+    define owner: [user]
+    define manager: [user] or owner           # owner is a manager
+    define staff: [user] or manager           # manager is staff
+
+type product
+  relations
+    define store: [store]
+    define can_edit: manager from store        # owner gets access via manager
+```
+
+This is better than chaining `owner` separately because it uses the existing concentric role chain — the owner automatically gets staff and manager access to all child resources.
+
+**Audit checklist for hierarchies:**
+
+When reviewing a model, for each parent-child relationship check:
+1. Does the parent type define roles (owner, head, manager, lead, etc.)?
+2. Are those roles relevant to the child resources?
+3. If yes, are they chained down as computed relations or included in a concentric role chain?
+
 **Benefits:**
 - Single permission grant propagates to entire subtree
 - Revoke access by removing one tuple
 - No redundant tuples — parent roles resolve through the chain
+- Parent roles like owner, head, manager are not accidentally excluded from child resources
 - Natural mapping to file system and organizational structures
 
 ### 3.3 Organization-Level Access
