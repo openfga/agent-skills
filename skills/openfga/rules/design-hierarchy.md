@@ -241,6 +241,48 @@ type product
 
 This is better than chaining `owner` separately because it uses the existing concentric role chain — the owner automatically gets staff and manager access to all child resources.
 
+**Unified parent relation for multi-type hierarchies:**
+
+When a type can appear in multiple hierarchies — or its parent can be one of several types — use a single `parent` relation with multiple type restrictions instead of separate relations for each parent type. This lets all role and permission chains use one `X from parent` expression regardless of which type the parent actually is.
+
+**Incorrect (separate relations per parent type):**
+
+```dsl.openfga
+type folder
+  relations
+    define drive: [drive]
+    define parent_folder: [folder]
+    define organization_admin: organization_admin from drive or organization_admin from parent_folder
+    define owner: [user] or owner from parent_folder
+    define writer: [user, group#member] or owner or writer from parent_folder
+    define reader: [user, group#member] or writer or reader from parent_folder or reader from drive
+```
+
+Every chain must reference both `drive` and `parent_folder`, making the model verbose and error-prone — it's easy to forget one of the two sources when adding a new role.
+
+**Correct (single parent relation with multiple allowed types):**
+
+```dsl.openfga
+type folder
+  relations
+    define parent: [drive, folder]
+    define organization_admin: organization_admin from parent
+    define owner: [user] or owner from parent
+    define writer: [user, group#member] or owner or writer from parent
+    define reader: [user, group#member] or writer or reader from parent
+```
+
+Root folders link `parent` to a `drive`, nested folders link `parent` to another `folder`. All chains go through the single `parent` relation.
+
+**When to use this pattern:**
+- A type sits at a junction of two hierarchies (e.g., a folder can live inside a drive or inside another folder)
+- Both parent types define the same roles or permissions that the child needs to chain (e.g., both `drive` and `folder` define `organization_admin`, `owner`, `writer`, `reader`)
+- You want to avoid duplicating `X from drive or X from parent_folder` for every chained relation
+
+**Requirements:**
+- All allowed parent types must define the relations being chained (e.g., if `parent: [drive, folder]` and you write `owner from parent`, both `drive` and `folder` must define `owner`)
+- Keep the relation name generic (`parent`) rather than type-specific (`parent_folder`, `drive`) since it now serves multiple types
+
 **Audit checklist for hierarchies:**
 
 When reviewing a model, for each parent-child relationship check:

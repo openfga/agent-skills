@@ -40,6 +40,17 @@ type document
 2. **Unused relations:** Remove relations that are never checked or written
 3. **Unreferenced conditions:** Remove conditions not used in any relation
 4. **Dead paths:** Remove `X from Y` paths where Y relation is never used
+5. **Downstream relations:** Before deleting relation `r`, verify no relation in this type or child types uses `r from <parent>`
+6. **Propagation aliases:** Keep computed aliases (for example, `org_admin`) when they are used to chain permissions across hierarchy levels
+
+**Safety rule:**
+- Do not delete a relation only because it is not directly asserted in tests.
+- A relation may be required as a transit dependency in inherited paths.
+- Always run a dependency scan before removal.
+
+```bash
+rg -n "<relation_name>|<relation_name> from" stores/<store>/{model.fga,store.fga.yaml}
+```
 
 **After generating models and tests:**
 

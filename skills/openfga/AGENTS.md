@@ -937,6 +937,13 @@ type product
 - Name them after the resource being created, for example `can_create_invoice`, `can_create_product`, or `can_create_report`.
 - On the child resource, reference the parent-scoped create permission only if creators should also gain edit or manage rights after creation.
 
+**Coverage checklist (required):**
+1. List each parent -> child relation in the model (for example, `organization -> hotel`, `hotel -> room`, `patient -> diagnosis`).
+2. For each pair, decide whether creation is application-managed or authorization-managed.
+3. If authorization-managed, ensure the parent defines an explicit `can_create_<child>` permission.
+4. Ensure tests include at least one allow and one deny assertion for each `can_create_<child>` permission.
+5. If creation is intentionally not modeled in OpenFGA, document that assumption in the README or test comments.
+
 **Benefits:**
 - Checks align with real objects that already exist
 - No need to mint speculative child IDs just to authorize creation
@@ -1181,6 +1188,48 @@ type product
 
 This is better than chaining `owner` separately because it uses the existing concentric role chain — the owner automatically gets staff and manager access to all child resources.
 
+**Unified parent relation for multi-type hierarchies:**
+
+When a type can appear in multiple hierarchies — or its parent can be one of several types — use a single `parent` relation with multiple type restrictions instead of separate relations for each parent type. This lets all role and permission chains use one `X from parent` expression regardless of which type the parent actually is.
+
+**Incorrect (separate relations per parent type):**
+
+```dsl.openfga
+type folder
+  relations
+    define drive: [drive]
+    define parent_folder: [folder]
+    define organization_admin: organization_admin from drive or organization_admin from parent_folder
+    define owner: [user] or owner from parent_folder
+    define writer: [user, group#member] or owner or writer from parent_folder
+    define reader: [user, group#member] or writer or reader from parent_folder or reader from drive
+```
+
+Every chain must reference both `drive` and `parent_folder`, making the model verbose and error-prone — it's easy to forget one of the two sources when adding a new role.
+
+**Correct (single parent relation with multiple allowed types):**
+
+```dsl.openfga
+type folder
+  relations
+    define parent: [drive, folder]
+    define organization_admin: organization_admin from parent
+    define owner: [user] or owner from parent
+    define writer: [user, group#member] or owner or writer from parent
+    define reader: [user, group#member] or writer or reader from parent
+```
+
+Root folders link `parent` to a `drive`, nested folders link `parent` to another `folder`. All chains go through the single `parent` relation.
+
+**When to use this pattern:**
+- A type sits at a junction of two hierarchies (e.g., a folder can live inside a drive or inside another folder)
+- Both parent types define the same roles or permissions that the child needs to chain (e.g., both `drive` and `folder` define `organization_admin`, `owner`, `writer`, `reader`)
+- You want to avoid duplicating `X from drive or X from parent_folder` for every chained relation
+
+**Requirements:**
+- All allowed parent types must define the relations being chained (e.g., if `parent: [drive, folder]` and you write `owner from parent`, both `drive` and `folder` must define `owner`)
+- Keep the relation name generic (`parent`) rather than type-specific (`parent_folder`, `drive`) since it now serves multiple types
+
 **Audit checklist for hierarchies:**
 
 When reviewing a model, for each parent-child relationship check:
@@ -1188,6 +1237,7 @@ When reviewing a model, for each parent-child relationship check:
 2. Are those roles relevant to the child resources?
 3. Does the parent define permissions whose semantics should carry over to the child?
 4. If yes, are those roles or permissions chained down as computed relations, reused via `X from parent`, or included in a concentric role chain?
+5. Can the type have parents of different types? If so, can they be unified into a single `parent` relation?
 
 **Benefits:**
 - Single permission grant propagates to entire subtree
@@ -2245,6 +2295,24 @@ type document
 2. **Unused relations:** Remove relations that are never checked or written
 3. **Unreferenced conditions:** Remove conditions not used in any relation
 4. **Dead paths:** Remove `X from Y` paths where Y relation is never used
+5. **Downstream consumers:** Before deleting relation `r`, verify no other relation references `r` via `r from <parent>` in this type or child types
+6. **Propagation aliases:** Keep computed aliases (for example, `org_admin`) if child types chain through them
+
+**Safety rule for simplification:**
+- Never remove a relation only because it is not checked directly in tests.
+- A relation can still be required as a transit node for inherited access (for example, `organization_instructor from course` consumed by `organization_instructor from class`).
+- Treat relation removal as a refactor that requires dependency scanning, not a cosmetic cleanup.
+
+**Refactor scan commands (recommended):**
+
+```bash
+# Find all references to a relation name across model and tests
+rg -n "organization_instructor|org_admin|<relation_name>" stores/<store>/{model.fga,store.fga.yaml}
+
+# Validate after any cleanup
+fga model validate --file stores/<store>/model.fga
+fga model test --tests stores/<store>/store.fga.yaml
+```
 
 **After generating models and tests:**
 
@@ -4019,6 +4087,29 @@ This step is **not optional**. An untested authorization model may:
 - Cause security vulnerabilities in production
 
 Always run tests. Always report results to the user.
+
+### 8.2 Refactor-Safety Checklist
+
+**Impact: CRITICAL (prevent silent authorization regressions)**
+
+When modifying or simplifying an existing model, run this checklist before delivery:
+
+1. **Parent create coverage:** For each parent -> child relation, confirm `can_create_<child>` exists on the parent, or explicitly document why creation is out of scope.
+2. **Relation dependency scan:** Before deleting/renaming any relation, search for all usages in model and tests.
+3. **Inherited chain integrity:** If a relation is used as a propagation alias (`X from Y`), keep it or update all downstream chains.
+4. **Behavioral delta tests:** Add or update allow/deny checks for every changed permission path.
+5. **Validation gates:** Run both commands below and report results:
+
+```bash
+fga model validate --file stores/<store>/model.fga
+fga model test --tests stores/<store>/store.fga.yaml
+```
+
+For repositories with many stores, run a full test pass before final delivery:
+
+```bash
+fga model test --tests "**/**/*.fga.yaml"
+```
 
 ---
 ## References

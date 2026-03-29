@@ -115,6 +115,20 @@ Each rule file contains:
 - Correct code example with explanation
 - Additional context and references
 
+## Mandatory Safety Checks (when editing existing models)
+
+Before finishing any OpenFGA model refactor:
+- Verify parent create coverage for each parent -> child relation (`design-create-on-parent`).
+- Run simplification dependency scan before deleting relations (`optimize-simplify`).
+- Validate and test touched stores with CLI (`workflow-validate`).
+
+Recommended commands:
+
+```bash
+fga model validate --file stores/<store>/model.fga
+fga model test --tests stores/<store>/store.fga.yaml
+```
+
 ## Full Compiled Document
 
 For the complete guide with all rules expanded: `AGENTS.md`

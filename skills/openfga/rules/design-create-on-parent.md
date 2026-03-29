@@ -72,6 +72,13 @@ type product
 - Name them after the resource being created, for example `can_create_invoice`, `can_create_product`, or `can_create_report`.
 - On the child resource, reference the parent-scoped create permission only if creators should also gain edit or manage rights after creation.
 
+**Coverage checklist (required):**
+1. Enumerate every parent -> child relation in the model.
+2. For each pair, choose one:
+  - Creation is enforced in OpenFGA: add `can_create_<child>` on the parent and test allow + deny cases.
+  - Creation is enforced outside OpenFGA: document that assumption in tests or README.
+3. Keep naming consistent: `can_create_room`, `can_create_reservation`, `can_create_diagnosis`, etc.
+
 **Benefits:**
 - Checks align with real objects that already exist
 - No need to mint speculative child IDs just to authorize creation
