@@ -302,7 +302,9 @@ Without a tuple, user:anne has no owner relationship to document:roadmap.
 
 **Impact: HIGH (permission inheritance)**
 
-Use `or` to create nested permissions where one relation implies another.
+Use `or` to create nested permissions where one relation implies another. This applies both to roles and to `can_*` permissions.
+
+**Concentric roles:**
 
 **Incorrect (redundant tuples required):**
 
@@ -338,10 +340,57 @@ type document
 
 Owners can edit and view. Editors can view. Each level inherits from the one above.
 
+**Concentric permissions:**
+
+Apply the same principle to `can_*` permissions: each permission should reference the next more-powerful permission instead of repeating the same roles. Order permissions from most restrictive (most powerful) first, then build less restrictive ones on top.
+
+**Incorrect (repeating roles across permissions):**
+
+```dsl.openfga
+type campaign
+  relations
+    define owner: [user]
+    define org_campaign_manager: campaign_manager from organization
+    define org_analyst: analyst from organization
+    define org_admin: admin from organization
+    define can_view: owner or org_analyst or org_campaign_manager or org_admin
+    define can_edit: owner or org_campaign_manager or org_admin
+    define can_delete: org_admin
+```
+
+`org_campaign_manager` and `org_admin` are repeated in both `can_view` and `can_edit`. If you add a new role that can edit, you must remember to add it to `can_view` too.
+
+**Correct (each permission references the next more-powerful one):**
+
+```dsl.openfga
+type campaign
+  relations
+    define owner: [user]
+    define org_campaign_manager: campaign_manager from organization
+    define org_analyst: analyst from organization
+    define org_admin: admin from organization
+    define can_delete: org_admin
+    define can_edit: owner or org_campaign_manager or can_delete
+    define can_view: org_analyst or can_edit
+```
+
+`can_view` includes everyone who `can_edit`, which includes everyone who `can_delete`. Each role appears exactly once.
+
+**Ordering rule:** define the most restrictive permission first (`can_delete`), then build up:
+
+```
+can_delete  →  can_edit  →  can_view
+(strongest)    (medium)     (weakest)
+```
+
+Less restrictive permissions reference more restrictive ones via `or can_<more_restrictive>`, adding only the roles unique to that level.
+
 **Benefits:**
 - Fewer tuples needed
 - Consistent permission semantics
 - Easier to reason about access levels
+- Each role appears exactly once — no risk of forgetting to add a role at every level
+- Adding a new role requires changing only one permission
 
 ### 2.3 Indirect Relationships with X from Y
 
@@ -397,13 +446,39 @@ Anne can view all documents in the engineering folder with just one permission t
 
 **Common patterns:**
 - `viewer from parent_folder` - Folder inheritance
-- `admin from organization` - Org-level admin access
+- `admin from organization` - Parent-level admin access (on the top-level type)
+- `org_admin from parent_folder` - Chaining a parent role through a hierarchy
 - `member from team` - Team membership propagation
+
+**Chain parent roles through computed relations:**
+
+When a hierarchy has multiple levels, avoid repeating `admin from organization` on every child type. Instead, define a local computed relation that chains up through the parent:
+
+```dsl.openfga
+type organization
+  relations
+    define admin: [user]
+
+type project
+  relations
+    define organization: [organization]
+    define org_admin: admin from organization
+    define can_delete: org_admin
+
+type task
+  relations
+    define project: [project]
+    define org_admin: org_admin from project   # chains through parent
+    define can_delete: org_admin
+```
+
+This way, `task` doesn't need its own `organization` relation or tuple — it resolves the parent role by traversing up: `task` → `project` → `organization`.
 
 **Benefits:**
 - Dramatically reduces tuple count
 - Simplifies permission management
 - Enables revoking access by deleting a single tuple
+- No redundant parent tuples on child objects
 
 ### 2.4 Usersets for Group-Based Access
 
@@ -643,24 +718,47 @@ await fga.check({ user, relation: 'can_delete', object: doc })
 - Easier to evolve without breaking applications
 - Self-documenting model
 
-**Advanced: Permission from multiple sources:**
+**Make permissions concentric:**
+
+When multiple `can_*` permissions share roles, don't repeat them — reference the more powerful permission instead. Order from most restrictive first, and build less restrictive permissions on top:
 
 ```dsl.openfga
 type document
   relations
     define owner: [user]
     define editor: [user]
-    define org: [organization]
+    define parent_folder: [folder]
+    define org_admin: org_admin from parent_folder
 
-    # Permission can come from direct role OR org admin
-    define can_delete: owner or admin from org
+    # Most restrictive first
+    define can_delete: owner or org_admin
+    define can_edit: editor or can_delete
+    define can_view: viewer or can_edit
 ```
+
+**Incorrect (repeating roles):**
+
+```dsl.openfga
+    define can_view: owner or editor or viewer or org_admin
+    define can_edit: owner or editor or org_admin
+    define can_delete: owner or org_admin
+```
+
+**Correct (concentric references):**
+
+```dsl.openfga
+    define can_delete: owner or org_admin
+    define can_edit: editor or can_delete
+    define can_view: viewer or can_edit
+```
+
+Each role appears exactly once. Adding a new role that can edit only requires changing `can_edit` — `can_view` picks it up automatically.
 
 ### 3.2 Hierarchical Structures
 
 **Impact: HIGH (scalable permission inheritance)**
 
-Model parent-child relationships to enable permission inheritance through hierarchies.
+Model parent-child relationships to enable permission inheritance through hierarchies. Store parent links only where structurally necessary and propagate roles through the chain — never duplicate a parent relation at every level.
 
 **Example (folder hierarchy):**
 
@@ -670,25 +768,45 @@ model
 
 type user
 
+type organization
+  relations
+    define member: [user]
+    define admin: [user]
+
 type folder
   relations
+    define organization: [organization]
     define parent_folder: [folder]
+    define org_admin: admin from organization
     define owner: [user] or owner from parent_folder
     define editor: [user] or owner or editor from parent_folder
-    define viewer: [user] or editor or viewer from parent_folder
+    define viewer: [user] or editor or viewer from parent_folder or member from organization
+    define can_delete: owner or org_admin
 
 type document
   relations
     define parent_folder: [folder]
+    define org_admin: org_admin from parent_folder
     define owner: [user] or owner from parent_folder
     define editor: [user] or owner or editor from parent_folder
     define viewer: [user] or editor or viewer from parent_folder
+    define can_delete: owner or org_admin
 ```
 
 **Tuples for nested structure:**
 
 ```yaml
-# Nested folder structure
+# Organization setup
+- user: user:cto
+  relation: admin
+  object: organization:acme
+
+# Root folder belongs to organization
+- user: organization:acme
+  relation: organization
+  object: folder:root
+
+# Nested folder structure — only parent links, no organization tuple needed
 - user: folder:root
   relation: parent_folder
   object: folder:engineering
@@ -697,36 +815,72 @@ type document
   relation: parent_folder
   object: folder:backend
 
-# Document in nested folder
+# Document in nested folder — only parent link needed
 - user: folder:backend
   relation: parent_folder
   object: document:api-spec
-
-# Grant access at root
-- user: user:cto
-  relation: viewer
-  object: folder:root
 ```
 
-The CTO can view all documents in all nested folders with a single tuple.
+The CTO can delete all documents in all nested folders because `org_admin` chains through the parent hierarchy automatically. No `organization` tuple is needed on `folder:engineering`, `folder:backend`, or `document:api-spec`.
 
 **Key patterns:**
-- Parent relations should allow the same type: `define parent_folder: [folder]`
-- Permissions inherit via `X from parent_folder`
+- Store the parent link to the root type (e.g. `organization`) only on the **top-level** object in the hierarchy
+- Child types reference their **immediate parent**, not the root: `define parent_folder: [folder]`
+- Propagate parent-level roles as local computed relations: `define org_admin: org_admin from parent_folder`
+- Permissions use the local computed relation: `can_delete: owner or org_admin`
 - Each level adds its own direct grants with `[user]`
+
+**Incorrect (duplicating the parent at every level):**
+
+```dsl.openfga
+type document
+  relations
+    define organization: [organization]   # WRONG: duplicates parent link
+    define parent_folder: [folder]
+    define can_delete: owner or admin from organization
+```
+
+```yaml
+# WRONG: requires an organization tuple on every single object
+- user: organization:acme
+  relation: organization
+  object: document:api-spec
+```
+
+This forces you to write an `organization` tuple for every object in the system, which defeats the purpose of having a hierarchy.
+
+**Correct (chain through the hierarchy):**
+
+```dsl.openfga
+type document
+  relations
+    define parent_folder: [folder]
+    define org_admin: org_admin from parent_folder  # chains up automatically
+    define can_delete: owner or org_admin
+```
+
+```yaml
+# Only the parent link is needed — org_admin resolves through the chain
+- user: folder:backend
+  relation: parent_folder
+  object: document:api-spec
+```
 
 **Benefits:**
 - Single permission grant propagates to entire subtree
 - Revoke access by removing one tuple
-- Natural mapping to file system structures
+- No redundant tuples — parent roles resolve through the chain
+- Natural mapping to file system and organizational structures
 
 ### 3.3 Organization-Level Access
 
 **Impact: HIGH (multi-tenant authorization)**
 
-Model organization membership and propagate access to owned resources.
+Model organization membership and propagate access to owned resources. When a hierarchy exists, store the parent link (e.g. `organization`) only on the top-level type and chain roles down through local computed relations — never duplicate the parent relation on every child type.
 
-**Model:**
+**Single-level model (no hierarchy):**
+
+When there is only one resource type directly under the parent, a direct parent relation is fine:
 
 ```dsl.openfga
 model
@@ -742,10 +896,14 @@ type organization
 type project
   relations
     define organization: [organization]
-    define owner: [user] or admin from organization
+    define org_admin: admin from organization
+    define org_member: member from organization
+    define owner: [user] or org_admin
     define editor: [user] or owner
-    define viewer: [user] or editor or member from organization
+    define viewer: [user] or editor or org_member
 ```
+
+Note that even here, parent-level roles are accessed through local computed relations (`org_admin`, `org_member`) rather than inline `admin from organization` in every permission. This keeps permissions readable and makes refactoring easier.
 
 **Tuples:**
 
@@ -770,6 +928,66 @@ type project
 - Bob (member): can view the project
 - All through organization membership
 
+**Multi-level model (hierarchy of types):**
+
+When child types exist below the top-level type, chain the parent roles down — don't add a direct parent relation on every child.
+
+```dsl.openfga
+type organization
+  relations
+    define member: [user]
+    define admin: [user]
+
+type project
+  relations
+    define organization: [organization]
+    define org_admin: admin from organization
+    define org_member: member from organization
+    define owner: [user] or org_admin
+    define viewer: [user] or owner or org_member
+
+type task
+  relations
+    define project: [project]
+    define org_admin: org_admin from project
+    define assignee: [user]
+    define can_view: assignee or viewer from project
+    define can_delete: org_admin
+```
+
+**Incorrect (duplicating the parent on child types):**
+
+```dsl.openfga
+type task
+  relations
+    define organization: [organization]   # WRONG: duplicates parent
+    define project: [project]
+    define can_delete: admin from organization
+```
+
+```yaml
+# WRONG: must write an organization tuple for every task
+- user: organization:acme
+  relation: organization
+  object: task:fix-bug
+```
+
+**Correct tuples for the multi-level model:**
+
+```yaml
+# Organization on the top-level type only
+- user: organization:acme
+  relation: organization
+  object: project:website
+
+# Child types only need their immediate parent link
+- user: project:website
+  relation: project
+  object: task:fix-bug
+```
+
+The `org_admin` role resolves through: `task` → `project` → `organization` automatically.
+
 **Extended pattern with teams:**
 
 ```dsl.openfga
@@ -782,7 +1000,8 @@ type project
   relations
     define organization: [organization]
     define team: [team]
-    define viewer: [user] or member from team or member from organization
+    define org_member: member from organization
+    define viewer: [user] or member from team or org_member
 ```
 
 **Multi-tenant isolation:**
@@ -863,11 +1082,31 @@ type document
 - object: folder:f_001        # Cryptic
 ```
 
+**Computed parent-role relations — prefix with the parent type name:**
+
+When chaining a role from a parent type through a hierarchy, name the local computed relation with a prefix matching the parent type:
+
+```dsl.openfga
+type project
+  relations
+    define organization: [organization]
+    define org_admin: admin from organization           # "org_" prefix from "organization"
+    define org_member: member from organization
+
+type task
+  relations
+    define project: [project]
+    define org_admin: org_admin from project             # same name, chains up
+```
+
+This makes it clear where the role originates and keeps names consistent across the hierarchy.
+
 **Consistency guidelines:**
 - Use snake_case for multi-word relations: `parent_folder`, `can_view`
 - Use kebab-case for object IDs: `roadmap-2024`, `acme-corp`
 - Prefix permissions with `can_`: `can_view`, `can_edit`, `can_delete`
 - Use nouns for roles: `owner`, `editor`, `viewer`, `admin`
+- Prefix computed parent-role relations with an abbreviation of the parent type: `org_admin`, `org_member`, `dept_head`
 
 ### 3.5 Modularize your modules with 'modules'
 
@@ -1757,10 +1996,43 @@ One permission tuple + structural tuples scales better than individual grants.
   object: team:engineering
 ```
 
+**Avoid duplicating parent relations across the hierarchy:**
+
+```yaml
+# WRONG: writing a parent tuple on every child object
+- user: organization:acme
+  relation: organization
+  object: project:website
+- user: organization:acme
+  relation: organization
+  object: task:fix-bug        # redundant — task is already under project
+- user: organization:acme
+  relation: organization
+  object: comment:c-001       # redundant — comment is already under task
+```
+
+```yaml
+# CORRECT: parent relation only on the top-level type
+- user: organization:acme
+  relation: organization
+  object: project:website
+
+# Children only need their immediate parent link
+- user: project:website
+  relation: project
+  object: task:fix-bug
+- user: task:fix-bug
+  relation: task
+  object: comment:c-001
+```
+
+The model should define local computed relations that chain up through the hierarchy (e.g. `define org_admin: org_admin from project`), so parent roles resolve automatically without extra tuples.
+
 **Benefits:**
 - Fewer tuples to store and query
 - Easier permission management
 - Single point of revocation
+- No redundant parent tuples on child objects
 - Better performance at scale
 
 ### 6.3 Type Restrictions

@@ -51,15 +51,38 @@ await fga.check({ user, relation: 'can_delete', object: doc })
 - Easier to evolve without breaking applications
 - Self-documenting model
 
-**Advanced: Permission from multiple sources:**
+**Make permissions concentric:**
+
+When multiple `can_*` permissions share roles, don't repeat them — reference the more powerful permission instead. Order from most restrictive first, and build less restrictive permissions on top:
 
 ```dsl.openfga
 type document
   relations
     define owner: [user]
     define editor: [user]
-    define org: [organization]
+    define parent_folder: [folder]
+    define org_admin: org_admin from parent_folder
 
-    # Permission can come from direct role OR org admin
-    define can_delete: owner or admin from org
+    # Most restrictive first
+    define can_delete: owner or org_admin
+    define can_edit: editor or can_delete
+    define can_view: viewer or can_edit
 ```
+
+**Incorrect (repeating roles):**
+
+```dsl.openfga
+    define can_view: owner or editor or viewer or org_admin
+    define can_edit: owner or editor or org_admin
+    define can_delete: owner or org_admin
+```
+
+**Correct (concentric references):**
+
+```dsl.openfga
+    define can_delete: owner or org_admin
+    define can_edit: editor or can_delete
+    define can_view: viewer or can_edit
+```
+
+Each role appears exactly once. Adding a new role that can edit only requires changing `can_edit` — `can_view` picks it up automatically.

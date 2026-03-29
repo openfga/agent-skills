@@ -65,8 +65,28 @@ type document
 - object: folder:f_001        # Cryptic
 ```
 
+**Computed parent-role relations — prefix with the parent type name:**
+
+When chaining a role from a parent type through a hierarchy, name the local computed relation with a prefix matching the parent type:
+
+```dsl.openfga
+type project
+  relations
+    define organization: [organization]
+    define org_admin: admin from organization           # "org_" prefix from "organization"
+    define org_member: member from organization
+
+type task
+  relations
+    define project: [project]
+    define org_admin: org_admin from project             # same name, chains up
+```
+
+This makes it clear where the role originates and keeps names consistent across the hierarchy.
+
 **Consistency guidelines:**
 - Use snake_case for multi-word relations: `parent_folder`, `can_view`
 - Use kebab-case for object IDs: `roadmap-2024`, `acme-corp`
 - Prefix permissions with `can_`: `can_view`, `can_edit`, `can_delete`
 - Use nouns for roles: `owner`, `editor`, `viewer`, `admin`
+- Prefix computed parent-role relations with an abbreviation of the parent type: `org_admin`, `org_member`, `dept_head`

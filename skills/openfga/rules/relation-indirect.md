@@ -57,10 +57,36 @@ Anne can view all documents in the engineering folder with just one permission t
 
 **Common patterns:**
 - `viewer from parent_folder` - Folder inheritance
-- `admin from organization` - Org-level admin access
+- `admin from organization` - Parent-level admin access (on the top-level type)
+- `org_admin from parent_folder` - Chaining a parent role through a hierarchy
 - `member from team` - Team membership propagation
+
+**Chain parent roles through computed relations:**
+
+When a hierarchy has multiple levels, avoid repeating `admin from organization` on every child type. Instead, define a local computed relation that chains up through the parent:
+
+```dsl.openfga
+type organization
+  relations
+    define admin: [user]
+
+type project
+  relations
+    define organization: [organization]
+    define org_admin: admin from organization
+    define can_delete: org_admin
+
+type task
+  relations
+    define project: [project]
+    define org_admin: org_admin from project   # chains through parent
+    define can_delete: org_admin
+```
+
+This way, `task` doesn't need its own `organization` relation or tuple — it resolves the parent role by traversing up: `task` → `project` → `organization`.
 
 **Benefits:**
 - Dramatically reduces tuple count
 - Simplifies permission management
 - Enables revoking access by deleting a single tuple
+- No redundant parent tuples on child objects

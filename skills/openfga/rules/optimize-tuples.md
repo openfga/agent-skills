@@ -65,8 +65,41 @@ One permission tuple + structural tuples scales better than individual grants.
   object: team:engineering
 ```
 
+**Avoid duplicating parent relations across the hierarchy:**
+
+```yaml
+# WRONG: writing a parent tuple on every child object
+- user: organization:acme
+  relation: organization
+  object: project:website
+- user: organization:acme
+  relation: organization
+  object: task:fix-bug        # redundant — task is already under project
+- user: organization:acme
+  relation: organization
+  object: comment:c-001       # redundant — comment is already under task
+```
+
+```yaml
+# CORRECT: parent relation only on the top-level type
+- user: organization:acme
+  relation: organization
+  object: project:website
+
+# Children only need their immediate parent link
+- user: project:website
+  relation: project
+  object: task:fix-bug
+- user: task:fix-bug
+  relation: task
+  object: comment:c-001
+```
+
+The model should define local computed relations that chain up through the hierarchy (e.g. `define org_admin: org_admin from project`), so parent roles resolve automatically without extra tuples.
+
 **Benefits:**
 - Fewer tuples to store and query
 - Easier permission management
 - Single point of revocation
+- No redundant parent tuples on child objects
 - Better performance at scale
