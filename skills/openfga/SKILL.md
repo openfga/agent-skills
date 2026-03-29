@@ -4,7 +4,7 @@ description: OpenFGA authorization modeling best practices and guidelines. This 
 license: MIT
 metadata:
   author: openfga
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 # OpenFGA Best Practices

@@ -65,9 +65,9 @@ type document
 - object: folder:f_001        # Cryptic
 ```
 
-**Computed parent-role relations — prefix with the parent type name:**
+**Computed parent-role relations — prefix with the parent type name (when needed for child propagation):**
 
-When chaining a role from a parent type through a hierarchy, name the local computed relation with a prefix matching the parent type:
+When a role must be propagated from a parent type to child types, name the local computed relation with a prefix matching the parent type:
 
 ```dsl.openfga
 type project
@@ -83,6 +83,8 @@ type task
 ```
 
 This makes it clear where the role originates and keeps names consistent across the hierarchy.
+
+If no child type needs the role, do not create a computed alias just for naming. Use inline expressions such as `admin from organization` directly in permissions.
 
 **Consistency guidelines:**
 - Use snake_case for multi-word relations: `parent_folder`, `can_view`

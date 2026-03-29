@@ -63,7 +63,11 @@ Anne can view all documents in the engineering folder with just one permission t
 
 **Chain parent roles through computed relations:**
 
-When a hierarchy has multiple levels, avoid repeating `admin from organization` on every child type. Instead, define a local computed relation that chains up through the parent:
+When a hierarchy has multiple levels, avoid repeating `admin from organization` on every child type. Define a local computed relation only when that role must be propagated to child types.
+
+If there is no child type consuming the role, keep it inline in permissions (for example, `can_delete: admin from organization`).
+
+When child types do need that role, define a local computed relation that chains up through the parent:
 
 ```dsl.openfga
 type organization

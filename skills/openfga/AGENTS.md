@@ -1,8 +1,8 @@
 # OpenFGA Best Practices
 
-**Version 1.0.0**
+**Version 1.2.0**
 OpenFGA Community
-January 2026
+March 2026
 
 > **Note:**
 > This document is mainly for agents and LLMs to follow when authoring,
@@ -304,7 +304,7 @@ Without a tuple, user:anne has no owner relationship to document:roadmap.
 
 Use `or` to create nested permissions where one relation implies another. This applies both to roles and to `can_*` permissions.
 
-**Concentric roles:**
+### Concentric roles
 
 **Incorrect (redundant tuples required):**
 
@@ -340,7 +340,7 @@ type document
 
 Owners can edit and view. Editors can view. Each level inherits from the one above.
 
-**Concentric permissions:**
+### Concentric permissions
 
 Apply the same principle to `can_*` permissions: each permission should reference the next more-powerful permission instead of repeating the same roles. Order permissions from most restrictive (most powerful) first, then build less restrictive ones on top.
 
@@ -385,7 +385,7 @@ can_delete  →  can_edit  →  can_view
 
 Less restrictive permissions reference more restrictive ones via `or can_<more_restrictive>`, adding only the roles unique to that level.
 
-**Include parent roles in concentric role chains:**
+### Include parent roles in concentric role chains
 
 When a parent type defines a role like `owner`, include it in the child type's concentric role hierarchy rather than chaining it separately. This ensures the role cascades to all permissions automatically.
 
@@ -491,7 +491,11 @@ Anne can view all documents in the engineering folder with just one permission t
 
 **Chain parent roles through computed relations:**
 
-When a hierarchy has multiple levels, avoid repeating `admin from organization` on every child type. Instead, define a local computed relation that chains up through the parent:
+When a hierarchy has multiple levels, avoid repeating `admin from organization` on every child type. Define a local computed relation only when that role must be propagated to child types.
+
+If there is no child type consuming the role, keep it inline in permissions (for example, `can_delete: admin from organization`).
+
+When child types do need that role, define a local computed relation that chains up through the parent:
 
 ```dsl.openfga
 type organization
@@ -649,7 +653,7 @@ check:
 
 **Impact: LOW (use carefully)**
 
-Wildcards (`type:*`) grant access a all instances of a user type to access a specfic object.
+Wildcards (`type:*`) grant access to all instances of a user type to an specfic object.
 
 **Example (public documents):**
 
@@ -1032,7 +1036,7 @@ Model organization membership and propagate access to owned resources. When a hi
 
 **Single-level model (no hierarchy):**
 
-When there is only one resource type directly under the parent, a direct parent relation is fine:
+When there is only one resource type directly under the parent, a direct `organization` relation is fine:
 
 ```dsl.openfga
 model
@@ -1048,14 +1052,12 @@ type organization
 type project
   relations
     define organization: [organization]
-    define org_admin: admin from organization
-    define org_member: member from organization
-    define owner: [user] or org_admin
+    define owner: [user] or admin from organization
     define editor: [user] or owner
-    define viewer: [user] or editor or org_member
+    define viewer: [user] or editor or member from organization
 ```
 
-Note that even here, parent-level roles are accessed through local computed relations (`org_admin`, `org_member`) rather than inline `admin from organization` in every permission. This keeps permissions readable and makes refactoring easier.
+In single-level models, keep parent-role references inline (for example, `admin from organization`) unless a child type needs to inherit that role. Only introduce computed aliases like `org_admin` when they are required for chaining into child types.
 
 **Tuples:**
 
@@ -1080,9 +1082,13 @@ Note that even here, parent-level roles are accessed through local computed rela
 - Bob (member): can view the project
 - All through organization membership
 
+**Rule of thumb:**
+- No child type depends on this type's parent role: keep `admin from organization` inline.
+- Child types must inherit this role through the parent: define `org_admin` (or equivalent) on the parent and chain it on children.
+
 **Multi-level model (hierarchy of types):**
 
-When child types exist below the top-level type, chain the parent roles down — don't add a direct parent relation on every child.
+When child types exist below the top-level type, chain the parent roles down — don't add a direct `organization` relation on every child.
 
 ```dsl.openfga
 type organization
@@ -1234,9 +1240,9 @@ type document
 - object: folder:f_001        # Cryptic
 ```
 
-**Computed parent-role relations — prefix with the parent type name:**
+**Computed parent-role relations — prefix with the parent type name (when needed for child propagation):**
 
-When chaining a role from a parent type through a hierarchy, name the local computed relation with a prefix matching the parent type:
+When a role must be propagated from a parent type to child types, name the local computed relation with a prefix matching the parent type:
 
 ```dsl.openfga
 type project
@@ -1252,6 +1258,8 @@ type task
 ```
 
 This makes it clear where the role originates and keeps names consistent across the hierarchy.
+
+If no child type needs the role, do not create a computed alias just for naming. Use inline expressions such as `admin from organization` directly in permissions.
 
 **Consistency guidelines:**
 - Use snake_case for multi-word relations: `parent_folder`, `can_view`
@@ -2211,7 +2219,7 @@ type document
     define owner: [user]                # Only users can own
 ```
 
-If business rules implies that a resource can belong to different kind of parents, then it is OK to represent it in the model:
+If business rules imply that a resource can belong to different kind of parents, then it is OK to represent it in the model:
 
 ```dsl.openfga
 type organization
@@ -3548,10 +3556,9 @@ using OpenFga.Sdk.Model;
 
 // Read and parse JSON file
 var jsonContent = await File.ReadAllTextAsync("model.json");
-var modelJson = JsonSerializer.Deserialize<WriteAuthorizationModelRequest>(jsonContent);
+var body = ClientWriteAuthorizationModelRequest.FromJson(jsonContent);
 
-var response = await fgaClient.WriteAuthorizationModel(modelJson);
-// response.AuthorizationModelId contains the new model ID
+var response = await fgaClient.WriteAuthorizationModel(body);
 ```
 
 **From DSL (.fga) file:**

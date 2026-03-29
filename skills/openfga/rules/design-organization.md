@@ -27,14 +27,12 @@ type organization
 type project
   relations
     define organization: [organization]
-    define org_admin: admin from organization
-    define org_member: member from organization
-    define owner: [user] or org_admin
+    define owner: [user] or admin from organization
     define editor: [user] or owner
-    define viewer: [user] or editor or org_member
+    define viewer: [user] or editor or member from organization
 ```
 
-Note that even here, parent-level roles are accessed through local computed relations (`org_admin`, `org_member`) rather than inline `admin from organization` in every permission. This keeps permissions readable and makes refactoring easier.
+In single-level models, keep parent-role references inline (for example, `admin from organization`) unless a child type needs to inherit that role. Only introduce computed aliases like `org_admin` when they are required for chaining into child types.
 
 **Tuples:**
 
@@ -58,6 +56,10 @@ Note that even here, parent-level roles are accessed through local computed rela
 - Anne (admin): can own, edit, and view the project
 - Bob (member): can view the project
 - All through organization membership
+
+**Rule of thumb:**
+- No child type depends on this type's parent role: keep `admin from organization` inline.
+- Child types must inherit this role through the parent: define `org_admin` (or equivalent) on the parent and chain it on children.
 
 **Multi-level model (hierarchy of types):**
 
