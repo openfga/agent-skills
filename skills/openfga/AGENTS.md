@@ -1,6 +1,6 @@
 # OpenFGA Best Practices
 
-**Version 1.2.1**
+**Version 1.0.0**
 OpenFGA Community
 March 2026
 
@@ -36,11 +36,11 @@ Comprehensive guide for authoring OpenFGA authorization models, designed for AI 
    - 2.7 [Wildcards for boolean attributes](#27-wildcards-for-boolean-attributes)
 3. [Model Design](#3-model-design) — **HIGH**
    - 3.1 [Define Permissions with can_ Relations](#31-define-permissions-with-can_-relations)
-  - 3.2 [Check Create Permissions on Parent Objects](#32-check-create-permissions-on-parent-objects)
-  - 3.3 [Hierarchical Structures](#33-hierarchical-structures)
-  - 3.4 [Organization-Level Access](#34-organization-level-access)
-  - 3.5 [Naming Conventions](#35-naming-conventions)
-  - 3.6 [Modularize your modules with 'modules'](#36-modularize-your-modules-with-modules)
+   - 3.2 [Check Create Permissions on Parent Objects](#32-check-create-permissions-on-parent-objects)
+   - 3.3 [Hierarchical Structures](#33-hierarchical-structures)
+   - 3.4 [Organization-Level Access](#34-organization-level-access)
+   - 3.5 [Naming Conventions](#35-naming-conventions)
+   - 3.6 [Modularize your modules with 'modules'](#36-modularize-your-modules-with-modules)
 4. [Testing & Validation](#4-testing-validation) — **HIGH**
    - 4.1 [Structure Tests in .fga.yaml](#41-structure-tests-in-fgayaml)
    - 4.2 [Check Assertions](#42-check-assertions)
@@ -492,7 +492,7 @@ Anne can view all documents in the engineering folder with just one permission t
 
 **Chain parent roles through computed relations:**
 
-When a hierarchy has multiple levels, avoid repeating `admin from organization` on every child type. Define a local computed relation only when that role must be propagated to child types.
+When a hierarchy has multiple levels, avoid repeating `admin from organization` on every chil/d type. Define a local computed relation only when that role must be propagated to child types.
 
 If there is no child type consuming the role, keep it inline in permissions (for example, `can_delete: admin from organization`).
 
@@ -870,7 +870,7 @@ This keeps the child permission aligned with the parent and avoids duplicating t
 
 ### 3.2 Check Create Permissions on Parent Objects
 
-**Impact: HIGH (clearer creation semantics)**
+**Impact: HIGH (clearer creation semantics and simpler application checks)**
 
 Creation permissions should usually live on the parent or container object, not on the leaf resource being created. If the child object does not exist yet, checking `can_create` on that child forces the application to invent an object identifier before authorization and makes the permission harder to reason about.
 
@@ -938,11 +938,11 @@ type product
 - On the child resource, reference the parent-scoped create permission only if creators should also gain edit or manage rights after creation.
 
 **Coverage checklist (required):**
-1. List each parent -> child relation in the model (for example, `organization -> hotel`, `hotel -> room`, `patient -> diagnosis`).
-2. For each pair, decide whether creation is application-managed or authorization-managed.
-3. If authorization-managed, ensure the parent defines an explicit `can_create_<child>` permission.
-4. Ensure tests include at least one allow and one deny assertion for each `can_create_<child>` permission.
-5. If creation is intentionally not modeled in OpenFGA, document that assumption in the README or test comments.
+1. Enumerate every parent -> child relation in the model.
+2. For each pair, choose one:
+  - Creation is enforced in OpenFGA: add `can_create_<child>` on the parent and test allow + deny cases.
+  - Creation is enforced outside OpenFGA: document that assumption in tests or README.
+3. Keep naming consistent: `can_create_room`, `can_create_reservation`, `can_create_diagnosis`, etc.
 
 **Benefits:**
 - Checks align with real objects that already exist
@@ -1127,7 +1127,7 @@ type ad_group
     define can_edit: owner or campaign_owner or org_campaign_manager or can_delete
 ```
 
-**More succinct (`can_edit` example):**
+  **More succinct (`can_edit` example):**
 
 ```dsl.openfga
 type campaign
@@ -1237,7 +1237,6 @@ When reviewing a model, for each parent-child relationship check:
 2. Are those roles relevant to the child resources?
 3. Does the parent define permissions whose semantics should carry over to the child?
 4. If yes, are those roles or permissions chained down as computed relations, reused via `X from parent`, or included in a concentric role chain?
-5. Can the type have parents of different types? If so, can they be unified into a single `parent` relation?
 
 **Benefits:**
 - Single permission grant propagates to entire subtree
@@ -2295,23 +2294,16 @@ type document
 2. **Unused relations:** Remove relations that are never checked or written
 3. **Unreferenced conditions:** Remove conditions not used in any relation
 4. **Dead paths:** Remove `X from Y` paths where Y relation is never used
-5. **Downstream consumers:** Before deleting relation `r`, verify no other relation references `r` via `r from <parent>` in this type or child types
-6. **Propagation aliases:** Keep computed aliases (for example, `org_admin`) if child types chain through them
+5. **Downstream relations:** Before deleting relation `r`, verify no relation in this type or child types uses `r from <parent>`
+6. **Propagation aliases:** Keep computed aliases (for example, `org_admin`) when they are used to chain permissions across hierarchy levels
 
-**Safety rule for simplification:**
-- Never remove a relation only because it is not checked directly in tests.
-- A relation can still be required as a transit node for inherited access (for example, `organization_instructor from course` consumed by `organization_instructor from class`).
-- Treat relation removal as a refactor that requires dependency scanning, not a cosmetic cleanup.
-
-**Refactor scan commands (recommended):**
+**Safety rule:**
+- Do not delete a relation only because it is not directly asserted in tests.
+- A relation may be required as a transit dependency in inherited paths.
+- Always run a dependency scan before removal.
 
 ```bash
-# Find all references to a relation name across model and tests
-rg -n "organization_instructor|org_admin|<relation_name>" stores/<store>/{model.fga,store.fga.yaml}
-
-# Validate after any cleanup
-fga model validate --file stores/<store>/model.fga
-fga model test --tests stores/<store>/store.fga.yaml
+rg -n "<relation_name>|<relation_name> from" stores/<store>/{model.fga,store.fga.yaml}
 ```
 
 **After generating models and tests:**
@@ -4087,29 +4079,6 @@ This step is **not optional**. An untested authorization model may:
 - Cause security vulnerabilities in production
 
 Always run tests. Always report results to the user.
-
-### 8.2 Refactor-Safety Checklist
-
-**Impact: CRITICAL (prevent silent authorization regressions)**
-
-When modifying or simplifying an existing model, run this checklist before delivery:
-
-1. **Parent create coverage:** For each parent -> child relation, confirm `can_create_<child>` exists on the parent, or explicitly document why creation is out of scope.
-2. **Relation dependency scan:** Before deleting/renaming any relation, search for all usages in model and tests.
-3. **Inherited chain integrity:** If a relation is used as a propagation alias (`X from Y`), keep it or update all downstream chains.
-4. **Behavioral delta tests:** Add or update allow/deny checks for every changed permission path.
-5. **Validation gates:** Run both commands below and report results:
-
-```bash
-fga model validate --file stores/<store>/model.fga
-fga model test --tests stores/<store>/store.fga.yaml
-```
-
-For repositories with many stores, run a full test pass before final delivery:
-
-```bash
-fga model test --tests "**/**/*.fga.yaml"
-```
 
 ---
 ## References
