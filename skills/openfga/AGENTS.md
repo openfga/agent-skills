@@ -1,6 +1,6 @@
 # OpenFGA Best Practices
 
-**Version 1.2.0**
+**Version 1.2.1**
 OpenFGA Community
 March 2026
 
@@ -36,10 +36,11 @@ Comprehensive guide for authoring OpenFGA authorization models, designed for AI 
    - 2.7 [Wildcards for boolean attributes](#27-wildcards-for-boolean-attributes)
 3. [Model Design](#3-model-design) — **HIGH**
    - 3.1 [Define Permissions with can_ Relations](#31-define-permissions-with-can_-relations)
-   - 3.2 [Hierarchical Structures](#32-hierarchical-structures)
-   - 3.3 [Organization-Level Access](#33-organization-level-access)
-   - 3.4 [Naming Conventions](#34-naming-conventions)
-   - 3.5 [Modularize your modules with 'modules'](#35-modularize-your-modules-with-modules)
+  - 3.2 [Check Create Permissions on Parent Objects](#32-check-create-permissions-on-parent-objects)
+  - 3.3 [Hierarchical Structures](#33-hierarchical-structures)
+  - 3.4 [Organization-Level Access](#34-organization-level-access)
+  - 3.5 [Naming Conventions](#35-naming-conventions)
+  - 3.6 [Modularize your modules with 'modules'](#36-modularize-your-modules-with-modules)
 4. [Testing & Validation](#4-testing-validation) — **HIGH**
    - 4.1 [Structure Tests in .fga.yaml](#41-structure-tests-in-fgayaml)
    - 4.2 [Check Assertions](#42-check-assertions)
@@ -846,7 +847,103 @@ type document
 
 Each role appears exactly once. Adding a new role that can edit only requires changing `can_edit` — `can_view` picks it up automatically.
 
-### 3.2 Hierarchical Structures
+**Reuse parent permissions when the child shares the same semantics:**
+
+If a child resource should grant the same permission as its parent to the same set of users, prefer reusing the parent's permission directly with `can_<action> from <parent_relation>` instead of re-listing the parent roles on the child.
+
+Example:
+
+```dsl.openfga
+type folder
+  relations
+    define viewer: [user]
+    define can_view: viewer
+
+type document
+  relations
+    define parent_folder: [folder]
+    define viewer: [user]
+    define can_view: viewer or can_view from parent_folder
+```
+
+This keeps the child permission aligned with the parent and avoids duplicating the parent's permission logic. For detailed guidance on when this is safe and when child semantics should stay explicit, see `design-hierarchy`.
+
+### 3.2 Check Create Permissions on Parent Objects
+
+**Impact: HIGH (clearer creation semantics)**
+
+Creation permissions should usually live on the parent or container object, not on the leaf resource being created. If the child object does not exist yet, checking `can_create` on that child forces the application to invent an object identifier before authorization and makes the permission harder to reason about.
+
+**Incorrect (create on the leaf object):**
+
+```dsl.openfga
+type organization
+  relations
+    define admin: [user]
+    define accountant: [user]
+
+type payment
+  relations
+    define organization: [organization]
+    define can_create: accountant from organization or admin from organization
+    define can_edit: can_create
+```
+
+This requires checking whether a user can create `payment:future-id`, even though that object is not real yet.
+
+**Correct (create on the parent object):**
+
+```dsl.openfga
+type organization
+  relations
+    define admin: [user]
+    define accountant: [user]
+    define can_create_payment: accountant or admin
+
+type payment
+  relations
+    define organization: [organization]
+    define creator: [user]
+    define can_edit: creator or accountant from organization or admin from organization
+```
+
+Now the application checks creation against the real parent object it already knows about:
+
+```typescript
+await fga.check({
+  user,
+  relation: 'can_create_payment',
+  object: 'organization:acme',
+})
+```
+
+**Another example with nested resources:**
+
+```dsl.openfga
+type store
+  relations
+    define manager: [user]
+    define can_create_product: manager
+
+type product
+  relations
+    define store: [store]
+    define creator: [user]
+    define can_edit: creator or can_create_product from store
+```
+
+**Rule:**
+- Put create permissions on the object that contains or owns the new resource.
+- Name them after the resource being created, for example `can_create_invoice`, `can_create_product`, or `can_create_report`.
+- On the child resource, reference the parent-scoped create permission only if creators should also gain edit or manage rights after creation.
+
+**Benefits:**
+- Checks align with real objects that already exist
+- No need to mint speculative child IDs just to authorize creation
+- Cleaner API design for applications
+- Better consistency across models with hierarchies
+
+### 3.3 Hierarchical Structures
 
 **Impact: HIGH (scalable permission inheritance)**
 
@@ -995,6 +1092,76 @@ type job
     define can_view: department_head or recruiter
 ```
 
+**Prefer inheriting parent permissions when semantics match:**
+
+If a child resource should grant the same permission to everyone who already has that permission on its parent, prefer reusing the parent's permission directly instead of re-listing the parent roles one by one.
+
+This applies to any permission, not just `can_edit`. Common examples include `can_view`, `can_edit`, `can_delete`, `can_approve`, `can_publish`, and `can_share`.
+
+**More verbose than necessary:**
+
+```dsl.openfga
+type campaign
+  relations
+    define owner: [user]
+    define org_campaign_manager: campaign_manager from organization
+    define org_admin: admin from organization
+    define can_delete: org_admin
+    define can_edit: owner or org_campaign_manager or can_delete
+
+type ad_group
+  relations
+    define campaign: [campaign]
+    define owner: [user]
+    define campaign_owner: owner from campaign
+    define org_campaign_manager: org_campaign_manager from campaign
+    define org_admin: org_admin from campaign
+    define can_delete: org_admin
+    define can_edit: owner or campaign_owner or org_campaign_manager or can_delete
+```
+
+**More succinct (`can_edit` example):**
+
+```dsl.openfga
+type campaign
+  relations
+    define owner: [user]
+    define org_campaign_manager: campaign_manager from organization
+    define org_admin: admin from organization
+    define can_delete: org_admin
+    define can_edit: owner or org_campaign_manager or can_delete
+
+type ad_group
+  relations
+    define campaign: [campaign]
+    define owner: [user]
+    define can_edit: owner or can_edit from campaign
+```
+
+This keeps the child permission aligned with the parent and avoids duplicating the parent's edit rules.
+
+The same pattern works for other permissions when the semantics match:
+
+```dsl.openfga
+type folder
+  relations
+    define parent_folder: [folder]
+    define viewer: [user]
+    define can_view: viewer
+
+type document
+  relations
+    define parent_folder: [folder]
+    define viewer: [user]
+    define can_view: viewer or can_view from parent_folder
+```
+
+Here, `document#can_view` inherits `folder#can_view` directly because the parent and child share the same viewing semantics.
+
+**Use this only when the child and parent truly share the same permission semantics:**
+
+If the child has different semantics for that permission, keep the child permission explicit. For example, if the child should be editable by the parent owner and managers but not by the child owner, or if the child adds extra editors like `creator`, then `can_edit from parent` may be too broad or too narrow. The same applies to other permissions: `can_view from parent` is only correct when the child's view policy should match the parent's view policy.
+
 **Include parent roles in concentric role hierarchies:**
 
 When a parent type defines an `owner` or similar role, include it in the child type's role hierarchy so it cascades automatically:
@@ -1019,7 +1186,8 @@ This is better than chaining `owner` separately because it uses the existing con
 When reviewing a model, for each parent-child relationship check:
 1. Does the parent type define roles (owner, head, manager, lead, etc.)?
 2. Are those roles relevant to the child resources?
-3. If yes, are they chained down as computed relations or included in a concentric role chain?
+3. Does the parent define permissions whose semantics should carry over to the child?
+4. If yes, are those roles or permissions chained down as computed relations, reused via `X from parent`, or included in a concentric role chain?
 
 **Benefits:**
 - Single permission grant propagates to entire subtree
@@ -1028,7 +1196,7 @@ When reviewing a model, for each parent-child relationship check:
 - Parent roles like owner, head, manager are not accidentally excluded from child resources
 - Natural mapping to file system and organizational structures
 
-### 3.3 Organization-Level Access
+### 3.4 Organization-Level Access
 
 **Impact: HIGH (multi-tenant authorization)**
 
@@ -1178,7 +1346,7 @@ type resource
 
 This ensures resources are only visible within their organization.
 
-### 3.4 Naming Conventions
+### 3.5 Naming Conventions
 
 **Impact: MEDIUM (maintainability)**
 
@@ -1268,7 +1436,7 @@ If no child type needs the role, do not create a computed alias just for naming.
 - Use nouns for roles: `owner`, `editor`, `viewer`, `admin`
 - Prefix computed parent-role relations with an abbreviation of the parent type: `org_admin`, `org_member`, `dept_head`
 
-### 3.5 Modularize your modules with 'modules'
+### 3.6 Modularize your modules with 'modules'
 
 **Impact: MEDIUM (multiple-team collaboration)**
 

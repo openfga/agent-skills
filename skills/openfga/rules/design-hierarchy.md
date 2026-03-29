@@ -152,6 +152,76 @@ type job
     define can_view: department_head or recruiter
 ```
 
+**Prefer inheriting parent permissions when semantics match:**
+
+If a child resource should grant the same permission to everyone who already has that permission on its parent, prefer reusing the parent's permission directly instead of re-listing the parent roles one by one.
+
+This applies to any permission, not just `can_edit`. Common examples include `can_view`, `can_edit`, `can_delete`, `can_approve`, `can_publish`, and `can_share`.
+
+**More verbose than necessary:**
+
+```dsl.openfga
+type campaign
+  relations
+    define owner: [user]
+    define org_campaign_manager: campaign_manager from organization
+    define org_admin: admin from organization
+    define can_delete: org_admin
+    define can_edit: owner or org_campaign_manager or can_delete
+
+type ad_group
+  relations
+    define campaign: [campaign]
+    define owner: [user]
+    define campaign_owner: owner from campaign
+    define org_campaign_manager: org_campaign_manager from campaign
+    define org_admin: org_admin from campaign
+    define can_delete: org_admin
+    define can_edit: owner or campaign_owner or org_campaign_manager or can_delete
+```
+
+  **More succinct (`can_edit` example):**
+
+```dsl.openfga
+type campaign
+  relations
+    define owner: [user]
+    define org_campaign_manager: campaign_manager from organization
+    define org_admin: admin from organization
+    define can_delete: org_admin
+    define can_edit: owner or org_campaign_manager or can_delete
+
+type ad_group
+  relations
+    define campaign: [campaign]
+    define owner: [user]
+    define can_edit: owner or can_edit from campaign
+```
+
+This keeps the child permission aligned with the parent and avoids duplicating the parent's edit rules.
+
+The same pattern works for other permissions when the semantics match:
+
+```dsl.openfga
+type folder
+  relations
+    define parent_folder: [folder]
+    define viewer: [user]
+    define can_view: viewer
+
+type document
+  relations
+    define parent_folder: [folder]
+    define viewer: [user]
+    define can_view: viewer or can_view from parent_folder
+```
+
+Here, `document#can_view` inherits `folder#can_view` directly because the parent and child share the same viewing semantics.
+
+**Use this only when the child and parent truly share the same permission semantics:**
+
+If the child has different semantics for that permission, keep the child permission explicit. For example, if the child should be editable by the parent owner and managers but not by the child owner, or if the child adds extra editors like `creator`, then `can_edit from parent` may be too broad or too narrow. The same applies to other permissions: `can_view from parent` is only correct when the child's view policy should match the parent's view policy.
+
 **Include parent roles in concentric role hierarchies:**
 
 When a parent type defines an `owner` or similar role, include it in the child type's role hierarchy so it cascades automatically:
@@ -176,7 +246,8 @@ This is better than chaining `owner` separately because it uses the existing con
 When reviewing a model, for each parent-child relationship check:
 1. Does the parent type define roles (owner, head, manager, lead, etc.)?
 2. Are those roles relevant to the child resources?
-3. If yes, are they chained down as computed relations or included in a concentric role chain?
+3. Does the parent define permissions whose semantics should carry over to the child?
+4. If yes, are those roles or permissions chained down as computed relations, reused via `X from parent`, or included in a concentric role chain?
 
 **Benefits:**
 - Single permission grant propagates to entire subtree

@@ -4,7 +4,7 @@ description: OpenFGA authorization modeling best practices and guidelines. This 
 license: MIT
 metadata:
   author: openfga
-  version: "1.2.0"
+  version: "1.2.1"
 ---
 
 # OpenFGA Best Practices
@@ -58,6 +58,7 @@ Reference these guidelines when:
 ### 3. Model Design (HIGH)
 
 - `design-permissions` - Define `can_*` relations for permissions
+- `design-create-on-parent` - Put create permissions on parent/container objects
 - `design-hierarchy` - Model parent-child relationships correctly
 - `design-organization` - Structure organization-level access
 - `design-naming` - Use clear, consistent naming conventions
@@ -104,6 +105,7 @@ Read individual rule files for detailed explanations and code examples:
 ```
 rules/core-types.md
 rules/relation-concentric.md
+rules/design-create-on-parent.md
 rules/test-fga-yaml.md
 ```
 

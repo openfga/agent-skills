@@ -116,3 +116,24 @@ type document
 ```
 
 Each role appears exactly once. Adding a new role that can edit only requires changing `can_edit` — `can_view` picks it up automatically.
+
+**Reuse parent permissions when the child shares the same semantics:**
+
+If a child resource should grant the same permission as its parent to the same set of users, prefer reusing the parent's permission directly with `can_<action> from <parent_relation>` instead of re-listing the parent roles on the child.
+
+Example:
+
+```dsl.openfga
+type folder
+  relations
+    define viewer: [user]
+    define can_view: viewer
+
+type document
+  relations
+    define parent_folder: [folder]
+    define viewer: [user]
+    define can_view: viewer or can_view from parent_folder
+```
+
+This keeps the child permission aligned with the parent and avoids duplicating the parent's permission logic. For detailed guidance on when this is safe and when child semantics should stay explicit, see `design-hierarchy`.
