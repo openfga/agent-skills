@@ -20,63 +20,58 @@ Comprehensive guide for authoring OpenFGA authorization models, designed for AI 
 
 ## Table of Contents
 
-1. [Core Concepts](#1-core-concepts) — **CRITICAL**
+1. [Core](#1-core)
    - 1.1 [Define Types for Entity Classes](#11-define-types-for-entity-classes)
-   - 1.2 [Schema Version](#12-schema-version)
-   - 1.3 [Relations Belong on Object Types](#13-relations-belong-on-object-types)
-   - 1.4 [Relationship Tuples as Facts](#14-relationship-tuples-as-facts)
-   - 1.5 [Model vs Data Separation](#15-model-vs-data-separation)
-2. [Relationship Definitions](#2-relationship-definitions) — **CRITICAL**
+   - 1.2 [Relations Belong on Object Types](#12-relations-belong-on-object-types)
+   - 1.3 [Relationship Tuples as Facts](#13-relationship-tuples-as-facts)
+   - 1.4 [Model vs Data Separation](#14-model-vs-data-separation)
+   - 1.5 [Schema Version](#15-schema-version)
+2. [Relations](#2-relations)
    - 2.1 [Direct Relationships](#21-direct-relationships)
-   - 2.2 [Concentric Relationships](#22-concentric-relationships)
-   - 2.3 [Indirect Relationships with X from Y](#23-indirect-relationships-with-x-from-y)
+   - 2.2 [Indirect Relationships with X from Y](#22-indirect-relationships-with-x-from-y)
+   - 2.3 [Concentric Relationships](#23-concentric-relationships)
    - 2.4 [Usersets for Group-Based Access](#24-usersets-for-group-based-access)
    - 2.5 [Conditional Relationships](#25-conditional-relationships)
    - 2.6 [Wildcards for Public Access](#26-wildcards-for-public-access)
    - 2.7 [Wildcards for boolean attributes](#27-wildcards-for-boolean-attributes)
-3. [Model Design](#3-model-design) — **HIGH**
+3. [Design](#3-design)
    - 3.1 [Define Permissions with can_ Relations](#31-define-permissions-with-can_-relations)
-   - 3.2 [Check Create Permissions on Parent Objects](#32-check-create-permissions-on-parent-objects)
-   - 3.3 [Hierarchical Structures](#33-hierarchical-structures)
-   - 3.4 [Organization-Level Access](#34-organization-level-access)
+   - 3.2 [Hierarchical Structures](#32-hierarchical-structures)
+   - 3.3 [Organization-Level Access](#33-organization-level-access)
+   - 3.4 [Check Create Permissions on Parent Objects](#34-check-create-permissions-on-parent-objects)
    - 3.5 [Naming Conventions](#35-naming-conventions)
    - 3.6 [Modularize your modules with 'modules'](#36-modularize-your-modules-with-modules)
-4. [Testing & Validation](#4-testing-validation) — **HIGH**
-   - 4.1 [Structure Tests in .fga.yaml](#41-structure-tests-in-fgayaml)
-   - 4.2 [Check Assertions](#42-check-assertions)
-   - 4.3 [List Objects Tests](#43-list-objects-tests)
-   - 4.4 [List Users Tests](#44-list-users-tests)
-   - 4.5 [Testing Conditions](#45-testing-conditions)
-   - 4.6 [OpenFGA CLI Usage](#46-openfga-cli-usage)
-5. [Custom Roles](#5-custom-roles) — **MEDIUM**
-   - 5.1 [Simple Static Roles](#51-simple-static-roles)
-   - 5.2 [Role Assignments for Resource-Specific Roles](#52-role-assignments-for-resource-specific-roles)
-   - 5.3 [Combining Static and Custom Roles](#53-combining-static-and-custom-roles)
-   - 5.4 [When to Use Each Role Pattern](#54-when-to-use-each-role-pattern)
-6. [Optimization](#6-optimization) — **MEDIUM**
-   - 6.1 [Simplify Models](#61-simplify-models)
-   - 6.2 [Minimize Tuple Count](#62-minimize-tuple-count)
-   - 6.3 [Type Restrictions](#63-type-restrictions)
-7. [SDK Integration](#7-sdk-integration) — **HIGH**
+4. [Roles](#4-roles)
+   - 4.1 [Simple Static Roles](#41-simple-static-roles)
+   - 4.2 [Combining Static and Custom Roles](#42-combining-static-and-custom-roles)
+   - 4.3 [Role Assignments for Resource-Specific Roles](#43-role-assignments-for-resource-specific-roles)
+   - 4.4 [When to Use Each Role Pattern](#44-when-to-use-each-role-pattern)
+5. [Optimization](#5-optimization)
+   - 5.1 [Simplify Models](#51-simplify-models)
+   - 5.2 [Minimize Tuple Count](#52-minimize-tuple-count)
+   - 5.3 [Type Restrictions](#53-type-restrictions)
+6. [Testing](#6-testing)
+   - 6.1 [Structure Tests in .fga.yaml](#61-structure-tests-in-fgayaml)
+   - 6.2 [Check Assertions](#62-check-assertions)
+   - 6.3 [List Objects Tests](#63-list-objects-tests)
+   - 6.4 [List Users Tests](#64-list-users-tests)
+   - 6.5 [Testing Conditions](#65-testing-conditions)
+   - 6.6 [OpenFGA CLI Usage](#66-openfga-cli-usage)
+   - 6.7 [Always Validate Models](#67-always-validate-models)
+7. [SDKs (for integration tasks only)](#7-sdks-for-integration-tasks-only)
    - 7.1 [JavaScript/TypeScript SDK](#71-javascripttypescript-sdk)
    - 7.2 [Go SDK](#72-go-sdk)
    - 7.3 [Python SDK](#73-python-sdk)
    - 7.4 [Java SDK](#74-java-sdk)
    - 7.5 [.NET SDK](#75-net-sdk)
-8. [Workflow](#8-workflow) — **CRITICAL**
-   - 8.1 [Always Validate Models](#81-always-validate-models)
 
 ---
 
-## 1. Core Concepts
-
-**Impact: CRITICAL**
+## 1. Core
 
 Understanding core concepts is fundamental to creating correct and maintainable authorization models.
 
 ### 1.1 Define Types for Entity Classes
-
-**Impact: CRITICAL (foundation of your model)**
 
 Types define classes of objects in your system. Every entity that participates in authorization should have a type.
 
@@ -124,42 +119,7 @@ type document
 
 Identify all relevant entities: users, resources, organizational units, groups, and any containers.
 
-### 1.2 Schema Version
-
-**Impact: HIGH (enables full feature set)**
-
-Always use schema version 1.1 to access all OpenFGA features.
-
-**Incorrect (missing schema version):**
-
-```dsl.openfga
-model
-
-type user
-
-type document
-  relations
-    define owner: [user]
-```
-
-**Correct (explicit schema version):**
-
-```dsl.openfga
-model
-  schema 1.1
-
-type user
-
-type document
-  relations
-    define owner: [user]
-```
-
-Schema 1.1 enables conditions, intersection, exclusion, and other advanced features.
-
-### 1.3 Relations Belong on Object Types
-
-**Impact: CRITICAL (correct model structure)**
+### 1.2 Relations Belong on Object Types
 
 Relations are defined on the types that represent resources being accessed, not on user types.
 
@@ -189,9 +149,7 @@ type document
 
 Ask "Can user U perform action A on object O?" — the relation belongs on type O.
 
-### 1.4 Relationship Tuples as Facts
-
-**Impact: CRITICAL (model vs data)**
+### 1.3 Relationship Tuples as Facts
 
 Relationship tuples represent facts about who has what relationship to what object. They are the data that brings your model to life.
 
@@ -222,9 +180,7 @@ Without tuples, authorization checks will fail because the model only defines wh
 - Model = static schema defining possible relationships
 - Tuples = dynamic data representing actual relationships
 
-### 1.5 Model vs Data Separation
-
-**Impact: HIGH (architectural clarity)**
+### 1.4 Model vs Data Separation
 
 The authorization model (schema) is static and defines structure. Relationship tuples (data) are dynamic and change frequently.
 
@@ -258,16 +214,43 @@ type document
 
 This separation enables efficient permission evaluation and decouples core logic changes from specific user permission modifications.
 
----
-## 2. Relationship Definitions
+### 1.5 Schema Version
 
-**Impact: CRITICAL**
+Always use schema version 1.1 to access all OpenFGA features.
+
+**Incorrect (missing schema version):**
+
+```dsl.openfga
+model
+
+type user
+
+type document
+  relations
+    define owner: [user]
+```
+
+**Correct (explicit schema version):**
+
+```dsl.openfga
+model
+  schema 1.1
+
+type user
+
+type document
+  relations
+    define owner: [user]
+```
+
+Schema 1.1 enables conditions, intersection, exclusion, and other advanced features.
+
+---
+## 2. Relations
 
 The building blocks for expressing authorization logic in OpenFGA.
 
 ### 2.1 Direct Relationships
-
-**Impact: CRITICAL (explicit access grants)**
 
 Direct relationships require explicit relationship tuples. Use type restrictions to control what can be directly assigned.
 
@@ -299,9 +282,116 @@ Without a tuple, user:anne has no owner relationship to document:roadmap.
 
 **Common mistake:** Forgetting that direct relationships require explicit tuples. The model only defines what is *possible*.
 
-### 2.2 Concentric Relationships
+### 2.2 Indirect Relationships with X from Y
 
-**Impact: HIGH (permission inheritance)**
+The `X from Y` pattern grants access through an intermediary object, enabling hierarchical permissions.
+
+**Incorrect (requires tuples on every document):**
+
+```dsl.openfga
+type folder
+  relations
+    define viewer: [user]
+
+type document
+  relations
+    define viewer: [user]
+```
+
+Each document needs its own viewer tuples even if they're in the same folder.
+
+**Correct (inherit from parent folder):**
+
+```dsl.openfga
+type folder
+  relations
+    define viewer: [user]
+
+type document
+  relations
+    define parent_folder: [folder]
+    define viewer: [user] or viewer from parent_folder
+```
+
+**Tuples:**
+
+```yaml
+# Grant folder access once
+- user: user:anne
+  relation: viewer
+  object: folder:engineering
+
+# Link documents to folder
+- user: folder:engineering
+  relation: parent_folder
+  object: document:spec
+- user: folder:engineering
+  relation: parent_folder
+  object: document:design
+```
+
+Anne can view all documents in the engineering folder with just one permission tuple.
+
+**Common patterns:**
+- `viewer from parent_folder` - Folder inheritance
+- `admin from organization` - Parent-level admin access (on the top-level type)
+- `org_admin from parent_folder` - Chaining a parent role through a hierarchy
+- `member from team` - Team membership propagation
+
+**Chain parent roles through computed relations:**
+
+When a hierarchy has multiple levels, avoid repeating `admin from organization` on every child type. Define a local computed relation only when that role must be propagated to child types.
+
+If there is no child type consuming the role, keep it inline in permissions (for example, `can_delete: admin from organization`).
+
+When child types do need that role, define a local computed relation that chains up through the parent:
+
+```dsl.openfga
+type organization
+  relations
+    define admin: [user]
+
+type project
+  relations
+    define organization: [organization]
+    define org_admin: admin from organization
+    define can_delete: org_admin
+
+type task
+  relations
+    define project: [project]
+    define org_admin: org_admin from project   # chains through parent
+    define can_delete: org_admin
+```
+
+This way, `task` doesn't need its own `organization` relation or tuple — it resolves the parent role by traversing up: `task` → `project` → `organization`.
+
+**Propagate all relevant parent roles, not just org-level ones:**
+
+The chaining pattern applies to any role on a parent type that is relevant to child resources — not just organization-level roles like `admin`. Roles like `owner`, `head`, `manager`, and `lead` should also be chained:
+
+```dsl.openfga
+type department
+  relations
+    define head: [user]
+
+type job
+  relations
+    define department: [department]
+    define department_head: head from department   # chains the head role
+    define can_view: department_head or recruiter
+```
+
+**Audit rule:** for each parent-child relationship, check if the parent defines roles that are meaningful to children. If so, chain them down as computed relations.
+
+**Benefits:**
+- Dramatically reduces tuple count
+- Simplifies permission management
+- Enables revoking access by deleting a single tuple
+- No redundant parent tuples on child objects
+- Parent roles like owner, head, manager are not accidentally excluded from child resources
+
+### 2.3 Concentric Relationships
 
 Use `or` to create nested permissions where one relation implies another. This applies both to roles and to `can_*` permissions.
 
@@ -432,120 +522,7 @@ Now the owner is a manager, which is staff, so `manager from store` and `staff f
 - Adding a new role requires changing only one permission
 - Parent roles like owner cascade through concentric chains to all child resources
 
-### 2.3 Indirect Relationships with X from Y
-
-**Impact: CRITICAL (scalable hierarchical access)**
-
-The `X from Y` pattern grants access through an intermediary object, enabling hierarchical permissions.
-
-**Incorrect (requires tuples on every document):**
-
-```dsl.openfga
-type folder
-  relations
-    define viewer: [user]
-
-type document
-  relations
-    define viewer: [user]
-```
-
-Each document needs its own viewer tuples even if they're in the same folder.
-
-**Correct (inherit from parent folder):**
-
-```dsl.openfga
-type folder
-  relations
-    define viewer: [user]
-
-type document
-  relations
-    define parent_folder: [folder]
-    define viewer: [user] or viewer from parent_folder
-```
-
-**Tuples:**
-
-```yaml
-# Grant folder access once
-- user: user:anne
-  relation: viewer
-  object: folder:engineering
-
-# Link documents to folder
-- user: folder:engineering
-  relation: parent_folder
-  object: document:spec
-- user: folder:engineering
-  relation: parent_folder
-  object: document:design
-```
-
-Anne can view all documents in the engineering folder with just one permission tuple.
-
-**Common patterns:**
-- `viewer from parent_folder` - Folder inheritance
-- `admin from organization` - Parent-level admin access (on the top-level type)
-- `org_admin from parent_folder` - Chaining a parent role through a hierarchy
-- `member from team` - Team membership propagation
-
-**Chain parent roles through computed relations:**
-
-When a hierarchy has multiple levels, avoid repeating `admin from organization` on every chil/d type. Define a local computed relation only when that role must be propagated to child types.
-
-If there is no child type consuming the role, keep it inline in permissions (for example, `can_delete: admin from organization`).
-
-When child types do need that role, define a local computed relation that chains up through the parent:
-
-```dsl.openfga
-type organization
-  relations
-    define admin: [user]
-
-type project
-  relations
-    define organization: [organization]
-    define org_admin: admin from organization
-    define can_delete: org_admin
-
-type task
-  relations
-    define project: [project]
-    define org_admin: org_admin from project   # chains through parent
-    define can_delete: org_admin
-```
-
-This way, `task` doesn't need its own `organization` relation or tuple — it resolves the parent role by traversing up: `task` → `project` → `organization`.
-
-**Propagate all relevant parent roles, not just org-level ones:**
-
-The chaining pattern applies to any role on a parent type that is relevant to child resources — not just organization-level roles like `admin`. Roles like `owner`, `head`, `manager`, and `lead` should also be chained:
-
-```dsl.openfga
-type department
-  relations
-    define head: [user]
-
-type job
-  relations
-    define department: [department]
-    define department_head: head from department   # chains the head role
-    define can_view: department_head or recruiter
-```
-
-**Audit rule:** for each parent-child relationship, check if the parent defines roles that are meaningful to children. If so, chain them down as computed relations.
-
-**Benefits:**
-- Dramatically reduces tuple count
-- Simplifies permission management
-- Enables revoking access by deleting a single tuple
-- No redundant parent tuples on child objects
-- Parent roles like owner, head, manager are not accidentally excluded from child resources
-
 ### 2.4 Usersets for Group-Based Access
-
-**Impact: HIGH (efficient group management)**
 
 Usersets (`type#relation`) represent collections of users, enabling group-based access control.
 
@@ -595,8 +572,6 @@ define editor: [team#member]
 ```
 
 ### 2.5 Conditional Relationships
-
-**Impact: MEDIUM (dynamic authorization)**
 
 Conditions use CEL (Common Expression Language) to add runtime context to authorization decisions.
 
@@ -652,9 +627,7 @@ check:
 
 ### 2.6 Wildcards for Public Access
 
-**Impact: LOW (use carefully)**
-
-Wildcards (`type:*`) grant access for all instances of a user type to a specific object.
+Wildcards (`type:*`) grant access to all instances of a user type to an specfic object.
 
 **Example (public documents):**
 
@@ -689,8 +662,6 @@ type document
 ```
 
 ### 2.7 Wildcards for boolean attributes
-
-**Impact: MEDIUM (use carefully)**
 
 Wildcards (`type:*`) grant access a all instances of a user type to access a specfic object. They can be used to simulate boolean attributes. 
 
@@ -727,15 +698,11 @@ All members from the acme organization can access the 'feature_sso' feature.
 - Boolean states ('enabled', 'active', 'published')
 
 ---
-## 3. Model Design
-
-**Impact: HIGH**
+## 3. Design
 
 Design patterns that lead to maintainable and correct authorization models.
 
 ### 3.1 Define Permissions with can_ Relations
-
-**Impact: HIGH (clear permission semantics)**
 
 Define specific permissions using `can_<action>` relations that cannot be directly assigned. Permissions should only reference roles and computed relations — never have direct type assignments like `[user]`.
 
@@ -867,93 +834,9 @@ type document
     define can_view: viewer or can_view from parent_folder
 ```
 
-This keeps the child permission aligned with the parent and avoids duplicating the parent's permission logic. For detailed guidance on when this is safe and when child semantics should stay explicit, see `design-hierarchy`.
+This keeps the child permission aligned with the parent and avoids duplicating the parent's permission logic. For detailed guidance on when this is safe and when child semantics should stay explicit, see `references/design-hierarchy.md`.
 
-### 3.2 Check Create Permissions on Parent Objects
-
-**Impact: HIGH (clearer creation semantics and simpler application checks)**
-
-Creation permissions should usually live on the parent or container object, not on the leaf resource being created. If the child object does not exist yet, checking `can_create` on that child forces the application to invent an object identifier before authorization and makes the permission harder to reason about.
-
-**Incorrect (create on the leaf object):**
-
-```dsl.openfga
-type organization
-  relations
-    define admin: [user]
-    define accountant: [user]
-
-type payment
-  relations
-    define organization: [organization]
-    define can_create: accountant from organization or admin from organization
-    define can_edit: can_create
-```
-
-This requires checking whether a user can create `payment:future-id`, even though that object is not real yet.
-
-**Correct (create on the parent object):**
-
-```dsl.openfga
-type organization
-  relations
-    define admin: [user]
-    define accountant: [user]
-    define can_create_payment: accountant or admin
-
-type payment
-  relations
-    define organization: [organization]
-    define creator: [user]
-    define can_edit: creator or accountant from organization or admin from organization
-```
-
-Now the application checks creation against the real parent object it already knows about:
-
-```typescript
-await fga.check({
-  user,
-  relation: 'can_create_payment',
-  object: 'organization:acme',
-})
-```
-
-**Another example with nested resources:**
-
-```dsl.openfga
-type store
-  relations
-    define manager: [user]
-    define can_create_product: manager
-
-type product
-  relations
-    define store: [store]
-    define creator: [user]
-    define can_edit: creator or can_create_product from store
-```
-
-**Rule:**
-- Put create permissions on the object that contains or owns the new resource.
-- Name them after the resource being created, for example `can_create_invoice`, `can_create_product`, or `can_create_report`.
-- On the child resource, reference the parent-scoped create permission only if creators should also gain edit or manage rights after creation.
-
-**Coverage checklist (required):**
-1. Enumerate every parent -> child relation in the model.
-2. For each pair, choose one:
-  - Creation is enforced in OpenFGA: add `can_create_<child>` on the parent and test allow + deny cases.
-  - Creation is enforced outside OpenFGA: document that assumption in tests or README.
-3. Keep naming consistent: `can_create_room`, `can_create_reservation`, `can_create_diagnosis`, etc.
-
-**Benefits:**
-- Checks align with real objects that already exist
-- No need to mint speculative child IDs just to authorize creation
-- Cleaner API design for applications
-- Better consistency across models with hierarchies
-
-### 3.3 Hierarchical Structures
-
-**Impact: HIGH (scalable permission inheritance)**
+### 3.2 Hierarchical Structures
 
 Model parent-child relationships to enable permission inheritance through hierarchies. Store parent links only where structurally necessary and propagate roles through the chain — never duplicate a parent relation at every level.
 
@@ -1246,9 +1129,7 @@ When reviewing a model, for each parent-child relationship check:
 - Parent roles like owner, head, manager are not accidentally excluded from child resources
 - Natural mapping to file system and organizational structures
 
-### 3.4 Organization-Level Access
-
-**Impact: HIGH (multi-tenant authorization)**
+### 3.3 Organization-Level Access
 
 Model organization membership and propagate access to owned resources. When a hierarchy exists, store the parent link (e.g. `organization`) only on the top-level type and chain roles down through local computed relations — never duplicate the parent relation on every child type.
 
@@ -1396,9 +1277,87 @@ type resource
 
 This ensures resources are only visible within their organization.
 
-### 3.5 Naming Conventions
+### 3.4 Check Create Permissions on Parent Objects
 
-**Impact: MEDIUM (maintainability)**
+Creation permissions should usually live on the parent or container object, not on the leaf resource being created. If the child object does not exist yet, checking `can_create` on that child forces the application to invent an object identifier before authorization and makes the permission harder to reason about.
+
+**Incorrect (create on the leaf object):**
+
+```dsl.openfga
+type organization
+  relations
+    define admin: [user]
+    define accountant: [user]
+
+type payment
+  relations
+    define organization: [organization]
+    define can_create: accountant from organization or admin from organization
+    define can_edit: can_create
+```
+
+This requires checking whether a user can create `payment:future-id`, even though that object is not real yet.
+
+**Correct (create on the parent object):**
+
+```dsl.openfga
+type organization
+  relations
+    define admin: [user]
+    define accountant: [user]
+    define can_create_payment: accountant or admin
+
+type payment
+  relations
+    define organization: [organization]
+    define creator: [user]
+    define can_edit: creator or accountant from organization or admin from organization
+```
+
+Now the application checks creation against the real parent object it already knows about:
+
+```typescript
+await fga.check({
+  user,
+  relation: 'can_create_payment',
+  object: 'organization:acme',
+})
+```
+
+**Another example with nested resources:**
+
+```dsl.openfga
+type store
+  relations
+    define manager: [user]
+    define can_create_product: manager
+
+type product
+  relations
+    define store: [store]
+    define creator: [user]
+    define can_edit: creator or can_create_product from store
+```
+
+**Rule:**
+- Put create permissions on the object that contains or owns the new resource.
+- Name them after the resource being created, for example `can_create_invoice`, `can_create_product`, or `can_create_report`.
+- On the child resource, reference the parent-scoped create permission only if creators should also gain edit or manage rights after creation.
+
+**Coverage checklist (required):**
+1. Enumerate every parent -> child relation in the model.
+2. For each pair, choose one:
+   - Creation is enforced in OpenFGA: add `can_create_<child>` on the parent and test allow + deny cases.
+   - Creation is enforced outside OpenFGA: document that assumption in tests or README.
+3. Keep naming consistent: `can_create_room`, `can_create_reservation`, `can_create_diagnosis`, etc.
+
+**Benefits:**
+- Checks align with real objects that already exist
+- No need to mint speculative child IDs just to authorize creation
+- Cleaner API design for applications
+- Better consistency across models with hierarchies
+
+### 3.5 Naming Conventions
 
 Use consistent naming conventions for clarity and maintainability.
 
@@ -1488,8 +1447,6 @@ If no child type needs the role, do not create a computed alias just for naming.
 
 ### 3.6 Modularize your modules with 'modules'
 
-**Impact: MEDIUM (multiple-team collaboration)**
-
 **CRITICAL**: Only do this when you are asked to modularize the model. By default, create models in a single file.
 
 ## Split the authorization model in modules
@@ -1566,6 +1523,8 @@ tuples:
   - user: user:anne
     relation: admin
     object: organization:openfga
+  - user: user:anne
+    relation: admin
     object: project:openfga
 tests:
   - name: Members can view projects
@@ -1579,442 +1538,11 @@ tests:
 ```
 
 ---
-## 4. Testing & Validation
-
-**Impact: HIGH**
-
-Thorough testing ensures your authorization model behaves as expected.
-
-### 4.1 Structure Tests in .fga.yaml
-
-**Impact: HIGH (test-driven authorization)**
-
-The `.fga.yaml` file defines both your model and tests in a single file.
-
-**Basic structure:**
-
-```yaml
-name: My Authorization Model Tests
-
-model: |
-  model
-    schema 1.1
-
-  type user
-
-  type document
-    relations
-      define owner: [user]
-      define editor: [user] or owner
-      define viewer: [user] or editor
-
-tuples:
-  - user: user:anne
-    relation: owner
-    object: document:roadmap
-
-  - user: user:bob
-    relation: editor
-    object: document:roadmap
-
-tests:
-  - name: Document access tests
-    check:
-      # Check assertions here
-    list_objects:
-      # List objects assertions here
-    list_users:
-      # List users assertions here
-```
-
-**Alternative (external files):**
-
-```yaml
-name: Model Tests
-model_file: ./model.fga
-tuple_file: ./tuples.yaml
-```
-
-**Alternative when using Modular Models:**
-
-```yaml
-name: Model Tests
-model_file: ./fga.mod
-tuple_file: ./tuples.yaml
-```
-
-
-**Multiple tuple files:**
-
-```yaml
-tuple_files:
-  - ./users.yaml
-  - ./permissions.yaml
-  - ./org-structure.yaml
-```
-
-**Benefits:**
-- Self-contained test definitions
-- Version-controlled authorization logic
-- Enables test-driven development for authorization
-
-### 4.2 Check Assertions
-
-**Impact: HIGH (verify permission grants)**
-
-Check assertions verify whether a user has a specific relation to an object.
-
-**Example:**
-
-```yaml
-tests:
-  - name: Owner permissions
-    check:
-      - user: user:anne
-        object: document:roadmap
-        assertions:
-          owner: true
-          editor: true   # Inherited through concentric relationship
-          viewer: true   # Inherited through concentric relationship
-          can_delete: true
-
-      - user: user:bob
-        object: document:roadmap
-        assertions:
-          owner: false
-          editor: true
-          viewer: true
-          can_delete: false
-```
-
-**Always test both positive and negative cases:**
-
-```yaml
-check:
-  # Positive: user HAS access
-  - user: user:anne
-    object: document:secret
-    assertions:
-      viewer: true
-
-  # Negative: user does NOT have access
-  - user: user:mallory
-    object: document:secret
-    assertions:
-      viewer: false
-      editor: false
-      owner: false
-```
-
-**Test boundary conditions:**
-
-```yaml
-check:
-  # User with no tuples at all
-  - user: user:unknown
-    object: document:roadmap
-    assertions:
-      viewer: false
-
-  # Object with no tuples at all
-  - user: user:anne
-    object: document:nonexistent
-    assertions:
-      viewer: false
-```
-
-### 4.3 List Objects Tests
-
-**Impact: MEDIUM (verify object enumeration)**
-
-List objects tests verify which objects a user has access to.
-
-**Example:**
-
-```yaml
-tests:
-  - name: List accessible documents
-    list_objects:
-      - user: user:anne
-        type: document
-        assertions:
-          owner:
-            - document:roadmap
-          viewer:
-            - document:roadmap
-            - document:public-doc
-
-      - user: user:bob
-        type: document
-        assertions:
-          owner: []  # Empty list - no owned documents
-          editor:
-            - document:roadmap
-```
-
-**Test empty results:**
-
-```yaml
-list_objects:
-  - user: user:unknown
-    type: document
-    assertions:
-      owner: []
-      viewer: []
-```
-
-**Test multiple object types:**
-
-```yaml
-list_objects:
-  - user: user:anne
-    type: document
-    assertions:
-      viewer:
-        - document:roadmap
-        - document:spec
-
-  - user: user:anne
-    type: folder
-    assertions:
-      viewer:
-        - folder:engineering
-```
-
-**Use cases:**
-- Building UI that shows accessible resources
-- Auditing user access across the system
-- Verifying hierarchical inheritance works correctly
-
-### 4.4 List Users Tests
-
-**Impact: MEDIUM (verify user enumeration)**
-
-List users tests verify which users have access to an object.
-
-**Example:**
-
-```yaml
-tests:
-  - name: List document users
-    list_users:
-      - object: document:roadmap
-        user_filter:
-          - type: user
-        assertions:
-          owner:
-            users:
-              - user:anne
-          editor:
-            users:
-              - user:anne
-              - user:bob
-          viewer:
-            users:
-              - user:anne
-              - user:bob
-```
-
-**Test empty results:**
-
-```yaml
-list_users:
-  - object: document:private
-    user_filter:
-      - type: user
-    assertions:
-      viewer:
-        users: []
-```
-
-**User filter with relation (for usersets):**
-
-```yaml
-list_users:
-  - object: document:roadmap
-    user_filter:
-      - type: team
-        relation: member
-    assertions:
-      editor:
-        users:
-          - team:engineering#member
-```
-
-**User filter formats:**
-- `type: user` - List individual users
-- `type: team` with `relation: member` - List team usersets
-- `type: user` with `user:*` - Include public access
-
-**Use cases:**
-- Auditing who has access to sensitive resources
-- Building share dialogs showing current collaborators
-- Compliance reporting
-
-### 4.5 Testing Conditions
-
-**Impact: MEDIUM (verify dynamic authorization)**
-
-Test conditional relationships by providing context in your assertions.
-
-**Example model:**
-
-```dsl.openfga
-model
-  schema 1.1
-
-type user
-
-type resource
-  relations
-    define viewer: [user with in_allowed_ip_range]
-
-condition in_allowed_ip_range(user_ip: string, allowed_range: string) {
-  user_ip.startsWith(allowed_range)
-}
-```
-
-**Conditional tuple:**
-
-```yaml
-tuples:
-  - user: user:anne
-    relation: viewer
-    object: resource:internal
-    condition:
-      name: in_allowed_ip_range
-      context:
-        allowed_range: "192.168."
-```
-
-**Tests with context:**
-
-```yaml
-tests:
-  - name: Conditional access tests
-    check:
-      # Access granted - IP matches
-      - user: user:anne
-        object: resource:internal
-        context:
-          user_ip: "192.168.1.100"
-        assertions:
-          viewer: true
-
-      # Access denied - IP doesn't match
-      - user: user:anne
-        object: resource:internal
-        context:
-          user_ip: "10.0.0.50"
-        assertions:
-          viewer: false
-```
-
-**Time-based condition testing:**
-
-```yaml
-tests:
-  - name: Time-based access
-    check:
-      # Within valid window
-      - user: user:peter
-        object: organization:acme
-        context:
-          current_time: "2024-02-01T00:10:00Z"
-        assertions:
-          admin: true
-
-      # After window expired
-      - user: user:peter
-        object: organization:acme
-        context:
-          current_time: "2024-02-02T00:00:00Z"
-        assertions:
-          admin: false
-```
-
-**Always test both passing and failing condition evaluations.**
-
-### 4.6 OpenFGA CLI Usage
-
-**Impact: HIGH (validation workflow)**
-
-Use the OpenFGA CLI to validate and test your models.
-
-**MANDATORY**: Always run `fga model test` after creating or modifying any `.fga` or `.fga.yaml` file. Do not consider any OpenFGA task complete until tests pass.
-
-Use the OpenFGA CLI to validate and test your models.
-
-**Installation:**
-
-```bash
-# macOS
-brew install openfga/tap/fga
-
-# Debian
-sudo apt install ./fga_<version>_linux_<arch>.deb
-
-# Docker
-docker pull openfga/cli
-docker run -it openfga/cli
-```
-
-**Validate model syntax:**
-
-```bash
-fga model validate --file model.fga
-```
-
-**Run tests:**
-
-```bash
-fga model test --tests model.fga.yaml
-```
-
-**Transform between formats:**
-
-```bash
-# DSL to JSON
-fga model transform --input model.fga --output model.json
-
-# JSON to DSL
-fga model transform --input model.json --output model.fga
-```
-
-**Example test run:**
-
-```bash
-$ fga model test --tests store.fga.yaml
-# Test Summary #
-Tests 1/1 passing
-Checks 5/5 passing
-```
-
-**CI/CD integration:**
-
-```bash
-# Fail the build if tests don't pass
-fga model test --tests store.fga.yaml || exit 1
-```
-
-You can also use the [OpenFGA Model Test GitHub actions](https://github.com/marketplace/actions/openfga-model-testing-action). 
-
-**Verbose output for debugging:**
-
-```bash
-fga model test --tests store.fga.yaml --verbose
-```
-
----
-## 5. Custom Roles
-
-**Impact: MEDIUM**
+## 4. Roles
 
 Implement user-defined roles when applications need flexible permission structures.
 
-### 5.1 Simple Static Roles
-
-**Impact: MEDIUM (organization-wide roles)**
+### 4.1 Simple Static Roles
 
 Always start with static roles defined in each type, unless you are asked to support custom-roles or user-defined roles
 
@@ -2056,9 +1584,73 @@ type project
 - Same role permissions everywhere
 - Simple permission structure
 
-### 5.2 Role Assignments for Resource-Specific Roles
+### 4.2 Combining Static and Custom Roles
 
-**Impact: MEDIUM (per-resource role members)**
+Combine pre-defined static roles with user-defined custom roles for practical authorization systems.
+
+**Model:**
+
+```dsl.openfga
+model
+  schema 1.1
+
+type user
+
+type role
+  relations
+    define assignee: [user]
+
+type organization
+  relations
+    # Static roles - known at design time
+    define owner: [user]
+    define admin: [user] or owner
+    define member: [user] or admin
+
+    # Permissions: combine static roles and custom roles
+    define can_manage_billing: [role#assignee] or owner
+    define can_manage_members: [role#assignee] or admin
+    define can_view_analytics: [role#assignee] or member
+    define can_create_projects: [role#assignee] or member
+```
+
+**Static roles provide baseline permissions:**
+
+```yaml
+# Org owner has all permissions through static role
+- user: user:founder
+  relation: owner
+  object: organization:acme
+
+# Admin has member permissions through concentric relationship
+- user: user:cto
+  relation: admin
+  object: organization:acme
+```
+
+**Custom roles extend for specific needs:**
+
+```yaml
+# Create a "billing-admin" custom role
+- user: role:acme-billing-admin#assignee
+  relation: can_manage_billing
+  object: organization:acme
+
+# Assign user to the custom role
+- user: user:accountant
+  relation: assignee
+  object: role:acme-billing-admin
+```
+
+**Benefits:**
+- Static roles handle common patterns (owner, admin, member)
+- Custom roles allow organizational flexibility
+- Clear separation of concerns
+- Easier to understand and audit
+
+**Recommendation:** Always define static roles for known, common access patterns. Use custom roles for organization-specific extensions.
+
+### 4.3 Role Assignments for Resource-Specific Roles
 
 For roles that can have different members on different levels of a resource hierarchy. DO NOT use this for top-level types like organizations.
 
@@ -2140,77 +1732,7 @@ type project
 - Different users need the same role on different resources
 - Per-project or per-team role membership varies
 
-### 5.3 Combining Static and Custom Roles
-
-**Impact: HIGH (practical role systems)**
-
-Combine pre-defined static roles with user-defined custom roles for practical authorization systems.
-
-**Model:**
-
-```dsl.openfga
-model
-  schema 1.1
-
-type user
-
-type role
-  relations
-    define assignee: [user]
-
-type organization
-  relations
-    # Static roles - known at design time
-    define owner: [user]
-    define admin: [user] or owner
-    define member: [user] or admin
-
-    # Permissions: combine static roles and custom roles
-    define can_manage_billing: [role#assignee] or owner
-    define can_manage_members: [role#assignee] or admin
-    define can_view_analytics: [role#assignee] or member
-    define can_create_projects: [role#assignee] or member
-```
-
-**Static roles provide baseline permissions:**
-
-```yaml
-# Org owner has all permissions through static role
-- user: user:founder
-  relation: owner
-  object: organization:acme
-
-# Admin has member permissions through concentric relationship
-- user: user:cto
-  relation: admin
-  object: organization:acme
-```
-
-**Custom roles extend for specific needs:**
-
-```yaml
-# Create a "billing-admin" custom role
-- user: role:acme-billing-admin#assignee
-  relation: can_manage_billing
-  object: organization:acme
-
-# Assign user to the custom role
-- user: user:accountant
-  relation: assignee
-  object: role:acme-billing-admin
-```
-
-**Benefits:**
-- Static roles handle common patterns (owner, admin, member)
-- Custom roles allow organizational flexibility
-- Clear separation of concerns
-- Easier to understand and audit
-
-**Recommendation:** Always define static roles for known, common access patterns. Use custom roles for organization-specific extensions.
-
-### 5.4 When to Use Each Role Pattern
-
-**Impact: MEDIUM (choosing the right pattern)**
+### 4.4 When to Use Each Role Pattern
 
 | Pattern | Use Case | Pros | Cons |
 |---------|----------|------|------|
@@ -2252,15 +1774,11 @@ type organization
 **Common mistake:** Using role assignments for organization-level roles. This adds unnecessary complexity. Use simple user-defined roles instead.
 
 ---
-## 6. Optimization
-
-**Impact: MEDIUM**
+## 5. Optimization
 
 Optimize your models for clarity and efficiency.
 
-### 6.1 Simplify Models
-
-**Impact: MEDIUM (maintainability)**
+### 5.1 Simplify Models
 
 Remove unused types and relations from your model.
 
@@ -2321,9 +1839,7 @@ fga model test --tests store.fga.yaml
 - Clearer documentation
 - Reduced confusion for developers
 
-### 6.2 Minimize Tuple Count
-
-**Impact: MEDIUM (storage and performance)**
+### 5.2 Minimize Tuple Count
 
 Use indirect relationships to reduce the number of tuples needed.
 
@@ -2422,9 +1938,7 @@ The model should define local computed relations that chain up through the hiera
 - No redundant parent tuples on child objects
 - Better performance at scale
 
-### 6.3 Type Restrictions
-
-**Impact: LOW (model correctness)**
+### 5.3 Type Restrictions
 
 Apply appropriate type restrictions to prevent invalid tuples.
 
@@ -2498,15 +2012,486 @@ define viewer: [user, user:*, team, team#member, organization, organization#memb
 Instead, be specific about what types make sense for each relation.
 
 ---
-## 7. SDK Integration
+## 6. Testing
 
-**Impact: HIGH**
+Thorough testing ensures your authorization model behaves as expected.
+
+### 6.1 Structure Tests in .fga.yaml
+
+The `.fga.yaml` file defines both your model and tests in a single file.
+
+**Basic structure:**
+
+```yaml
+name: My Authorization Model Tests
+
+model: |
+  model
+    schema 1.1
+
+  type user
+
+  type document
+    relations
+      define owner: [user]
+      define editor: [user] or owner
+      define viewer: [user] or editor
+
+tuples:
+  - user: user:anne
+    relation: owner
+    object: document:roadmap
+
+  - user: user:bob
+    relation: editor
+    object: document:roadmap
+
+tests:
+  - name: Document access tests
+    check:
+      # Check assertions here
+    list_objects:
+      # List objects assertions here
+    list_users:
+      # List users assertions here
+```
+
+**Alternative (external files):**
+
+```yaml
+name: Model Tests
+model_file: ./model.fga
+tuple_file: ./tuples.yaml
+```
+
+**Alternative when using Modular Models:**
+
+```yaml
+name: Model Tests
+model_file: ./fga.mod
+tuple_file: ./tuples.yaml
+```
+
+
+**Multiple tuple files:**
+
+```yaml
+tuple_files:
+  - ./users.yaml
+  - ./permissions.yaml
+  - ./org-structure.yaml
+```
+
+**Benefits:**
+- Self-contained test definitions
+- Version-controlled authorization logic
+- Enables test-driven development for authorization
+
+### 6.2 Check Assertions
+
+Check assertions verify whether a user has a specific relation to an object.
+
+**Example:**
+
+```yaml
+tests:
+  - name: Owner permissions
+    check:
+      - user: user:anne
+        object: document:roadmap
+        assertions:
+          owner: true
+          editor: true   # Inherited through concentric relationship
+          viewer: true   # Inherited through concentric relationship
+          can_delete: true
+
+      - user: user:bob
+        object: document:roadmap
+        assertions:
+          owner: false
+          editor: true
+          viewer: true
+          can_delete: false
+```
+
+**Always test both positive and negative cases:**
+
+```yaml
+check:
+  # Positive: user HAS access
+  - user: user:anne
+    object: document:secret
+    assertions:
+      viewer: true
+
+  # Negative: user does NOT have access
+  - user: user:mallory
+    object: document:secret
+    assertions:
+      viewer: false
+      editor: false
+      owner: false
+```
+
+**Test boundary conditions:**
+
+```yaml
+check:
+  # User with no tuples at all
+  - user: user:unknown
+    object: document:roadmap
+    assertions:
+      viewer: false
+
+  # Object with no tuples at all
+  - user: user:anne
+    object: document:nonexistent
+    assertions:
+      viewer: false
+```
+
+### 6.3 List Objects Tests
+
+List objects tests verify which objects a user has access to.
+
+**Example:**
+
+```yaml
+tests:
+  - name: List accessible documents
+    list_objects:
+      - user: user:anne
+        type: document
+        assertions:
+          owner:
+            - document:roadmap
+          viewer:
+            - document:roadmap
+            - document:public-doc
+
+      - user: user:bob
+        type: document
+        assertions:
+          owner: []  # Empty list - no owned documents
+          editor:
+            - document:roadmap
+```
+
+**Test empty results:**
+
+```yaml
+list_objects:
+  - user: user:unknown
+    type: document
+    assertions:
+      owner: []
+      viewer: []
+```
+
+**Test multiple object types:**
+
+```yaml
+list_objects:
+  - user: user:anne
+    type: document
+    assertions:
+      viewer:
+        - document:roadmap
+        - document:spec
+
+  - user: user:anne
+    type: folder
+    assertions:
+      viewer:
+        - folder:engineering
+```
+
+**Use cases:**
+- Building UI that shows accessible resources
+- Auditing user access across the system
+- Verifying hierarchical inheritance works correctly
+
+### 6.4 List Users Tests
+
+List users tests verify which users have access to an object.
+
+**Example:**
+
+```yaml
+tests:
+  - name: List document users
+    list_users:
+      - object: document:roadmap
+        user_filter:
+          - type: user
+        assertions:
+          owner:
+            users:
+              - user:anne
+          editor:
+            users:
+              - user:anne
+              - user:bob
+          viewer:
+            users:
+              - user:anne
+              - user:bob
+```
+
+**Test empty results:**
+
+```yaml
+list_users:
+  - object: document:private
+    user_filter:
+      - type: user
+    assertions:
+      viewer:
+        users: []
+```
+
+**User filter with relation (for usersets):**
+
+```yaml
+list_users:
+  - object: document:roadmap
+    user_filter:
+      - type: team
+        relation: member
+    assertions:
+      editor:
+        users:
+          - team:engineering#member
+```
+
+**User filter formats:**
+- `type: user` - List individual users
+- `type: team` with `relation: member` - List team usersets
+- `type: user` with `user:*` - Include public access
+
+**Use cases:**
+- Auditing who has access to sensitive resources
+- Building share dialogs showing current collaborators
+- Compliance reporting
+
+### 6.5 Testing Conditions
+
+Test conditional relationships by providing context in your assertions.
+
+**Example model:**
+
+```dsl.openfga
+model
+  schema 1.1
+
+type user
+
+type resource
+  relations
+    define viewer: [user with in_allowed_ip_range]
+
+condition in_allowed_ip_range(user_ip: string, allowed_range: string) {
+  user_ip.startsWith(allowed_range)
+}
+```
+
+**Conditional tuple:**
+
+```yaml
+tuples:
+  - user: user:anne
+    relation: viewer
+    object: resource:internal
+    condition:
+      name: in_allowed_ip_range
+      context:
+        allowed_range: "192.168."
+```
+
+**Tests with context:**
+
+```yaml
+tests:
+  - name: Conditional access tests
+    check:
+      # Access granted - IP matches
+      - user: user:anne
+        object: resource:internal
+        context:
+          user_ip: "192.168.1.100"
+        assertions:
+          viewer: true
+
+      # Access denied - IP doesn't match
+      - user: user:anne
+        object: resource:internal
+        context:
+          user_ip: "10.0.0.50"
+        assertions:
+          viewer: false
+```
+
+**Time-based condition testing:**
+
+```yaml
+tests:
+  - name: Time-based access
+    check:
+      # Within valid window
+      - user: user:peter
+        object: organization:acme
+        context:
+          current_time: "2024-02-01T00:10:00Z"
+        assertions:
+          admin: true
+
+      # After window expired
+      - user: user:peter
+        object: organization:acme
+        context:
+          current_time: "2024-02-02T00:00:00Z"
+        assertions:
+          admin: false
+```
+
+**Always test both passing and failing condition evaluations.**
+
+### 6.6 OpenFGA CLI Usage
+
+Use the OpenFGA CLI to validate and test your models.
+
+**MANDATORY**: Always run `fga model test` after creating or modifying any `.fga` or `.fga.yaml` file. Do not consider any OpenFGA task complete until tests pass.
+
+Use the OpenFGA CLI to validate and test your models.
+
+**Installation:**
+
+```bash
+# macOS
+brew install openfga/tap/fga
+
+# Debian
+sudo apt install ./fga_<version>_linux_<arch>.deb
+
+# Docker
+docker pull openfga/cli
+docker run -it openfga/cli
+```
+
+**Validate model syntax:**
+
+```bash
+fga model validate --file model.fga
+```
+
+**Run tests:**
+
+```bash
+fga model test --tests model.fga.yaml
+```
+
+**Transform between formats:**
+
+```bash
+# DSL to JSON
+fga model transform --input model.fga --output model.json
+
+# JSON to DSL
+fga model transform --input model.json --output model.fga
+```
+
+**Example test run:**
+
+```bash
+$ fga model test --tests store.fga.yaml
+# Test Summary #
+Tests 1/1 passing
+Checks 5/5 passing
+```
+
+**CI/CD integration:**
+
+```bash
+# Fail the build if tests don't pass
+fga model test --tests store.fga.yaml || exit 1
+```
+
+You can also use the [OpenFGA Model Test GitHub actions](https://github.com/marketplace/actions/openfga-model-testing-action). 
+
+**Verbose output for debugging:**
+
+```bash
+fga model test --tests store.fga.yaml --verbose
+```
+
+### 6.7 Always Validate Models
+
+**CRITICAL**: After creating or modifying any `.fga` or `.fga.yaml` file, you MUST immediately run tests to validate the model. Never deliver an untested model.
+
+### Incorrect: Delivering Untested Model
+
+```
+1. Create/modify .fga model
+2. Create/modify .fga.yaml tests
+3. Deliver to user ❌ WRONG
+```
+
+The model may have syntax errors, logical errors, or test assertions that don't match actual behavior.
+
+### Correct: Validate Before Delivery
+
+```
+1. Create/modify .fga model
+2. Create/modify .fga.yaml tests
+3. Run: fga model test --tests <file>.fga.yaml ✓
+4. If tests fail: fix model or tests, go to step 3
+5. Deliver to user with test results ✓
+```
+
+### Command
+
+```bash
+fga model test --tests <filename>.fga.yaml
+```
+
+### Why This Matters
+
+- **Syntax errors**: The DSL parser will catch invalid syntax
+- **Logical errors**: Tests verify permissions work as intended
+- **Inheritance bugs**: Complex `from` relationships may not behave as expected
+- **Missing tuples**: Tests ensure all required tuples exist for assertions
+
+### Example Workflow
+
+```bash
+# After creating notion.fga and notion.fga.yaml
+$ fga model test --tests notion.fga.yaml
+
+# Expected output for passing tests:
+# Test Summary #
+Tests 14/14 passing
+Checks 123/123 passing
+ListObjects 3/3 passing
+ListUsers 1/1 passing
+
+# If tests fail, fix the issues and re-run until all pass
+```
+
+### Non-Negotiable
+
+This step is **not optional**. An untested authorization model may:
+- Grant access to users who shouldn't have it
+- Deny access to users who should have it
+- Cause security vulnerabilities in production
+
+Always run tests. Always report results to the user.
+
+---
+## 7. SDKs (for integration tasks only)
 
 SDK implementations for integrating OpenFGA into your applications.
 
 ### 7.1 JavaScript/TypeScript SDK
-
-**Impact: HIGH (client implementation for JS/TS)**
 
 The `@openfga/sdk` package provides the official OpenFGA client for JavaScript and TypeScript applications.
 
@@ -2745,8 +2730,6 @@ const fgaClient = new OpenFgaClient({
 - **Batch operations:** Use `correlationId` to match responses to requests
 
 ### 7.2 Go SDK
-
-**Impact: HIGH (client implementation for Go)**
 
 The `github.com/openfga/go-sdk` package provides the official OpenFGA client for Go applications.
 
@@ -3038,8 +3021,6 @@ fgaClient, err := NewSdkClient(&ClientConfiguration{
 - **Streaming:** Use `StreamedListObjects` for large result sets
 
 ### 7.3 Python SDK
-
-**Impact: HIGH (client implementation for Python)**
 
 The `openfga_sdk` package provides the official OpenFGA client for Python applications with both async and sync support.
 
@@ -3366,8 +3347,6 @@ except ApiException as e:
 - **Streaming:** Use `streamed_list_objects` for large result sets
 
 ### 7.4 Java SDK
-
-**Impact: HIGH (client implementation for Java)**
 
 The OpenFGA Java SDK provides the official client for JVM applications. Requires Java 11+.
 
@@ -3709,8 +3688,6 @@ var fgaClient = new OpenFgaClient(config);
 
 ### 7.5 .NET SDK
 
-**Impact: HIGH (client implementation for .NET)**
-
 The `OpenFga.Sdk` package provides the official OpenFGA client for .NET applications.
 
 ### Installation
@@ -4007,77 +3984,6 @@ var response = await fgaClient.Check(body, options);
 - **Streaming:** Use `StreamedListObjects` with `await foreach` for large result sets
 - **Retry behavior:** SDK auto-retries on 429 and 5xx errors (up to 3 times)
 - **Retry-After:** SDK respects the `Retry-After` header with exponential backoff
-
----
-## 8. Workflow
-
-**Impact: CRITICAL**
-
-Essential workflow practices for working with OpenFGA models.
-
-### 8.1 Always Validate Models
-
-**Impact: CRITICAL (mandatory workflow step)**
-
-**CRITICAL**: After creating or modifying any `.fga` or `.fga.yaml` file, you MUST immediately run tests to validate the model. Never deliver an untested model.
-
-### Incorrect: Delivering Untested Model
-
-```
-1. Create/modify .fga model
-2. Create/modify .fga.yaml tests
-3. Deliver to user ❌ WRONG
-```
-
-The model may have syntax errors, logical errors, or test assertions that don't match actual behavior.
-
-### Correct: Validate Before Delivery
-
-```
-1. Create/modify .fga model
-2. Create/modify .fga.yaml tests
-3. Run: fga model test --tests <file>.fga.yaml ✓
-4. If tests fail: fix model or tests, go to step 3
-5. Deliver to user with test results ✓
-```
-
-### Command
-
-```bash
-fga model test --tests <filename>.fga.yaml
-```
-
-### Why This Matters
-
-- **Syntax errors**: The DSL parser will catch invalid syntax
-- **Logical errors**: Tests verify permissions work as intended
-- **Inheritance bugs**: Complex `from` relationships may not behave as expected
-- **Missing tuples**: Tests ensure all required tuples exist for assertions
-
-### Example Workflow
-
-```bash
-# After creating notion.fga and notion.fga.yaml
-$ fga model test --tests notion.fga.yaml
-
-# Expected output for passing tests:
-# Test Summary #
-Tests 14/14 passing
-Checks 123/123 passing
-ListObjects 3/3 passing
-ListUsers 1/1 passing
-
-# If tests fail, fix the issues and re-run until all pass
-```
-
-### Non-Negotiable
-
-This step is **not optional**. An untested authorization model may:
-- Grant access to users who shouldn't have it
-- Deny access to users who should have it
-- Cause security vulnerabilities in production
-
-Always run tests. Always report results to the user.
 
 ---
 ## References

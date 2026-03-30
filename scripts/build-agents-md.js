@@ -5,7 +5,7 @@ const path = require('path');
 
 // Configuration
 const SKILLS_DIR = path.join(__dirname, '..', 'skills', 'openfga');
-const RULES_DIR = path.join(SKILLS_DIR, 'rules');
+const RULES_DIR = path.join(SKILLS_DIR, 'references');
 const SKILL_FILE = path.join(SKILLS_DIR, 'SKILL.md');
 const OUTPUT_FILE = path.join(SKILLS_DIR, 'AGENTS.md');
 
@@ -22,9 +22,9 @@ const SECTION_INTROS = {
 };
 
 /**
- * Parse SKILL.md to extract section order and rule order
- * Order is determined by the Quick Reference section headers (### N. Title)
- * Impact is determined by the (IMPACT) suffix in those headers
+ * Parse SKILL.md to extract section order and rule order from the Rule Index tables.
+ * Each table section has a ### heading followed by a markdown table with
+ * `references/<name>.md` file paths and descriptions.
  */
 function parseSkillFile() {
   const content = fs.readFileSync(SKILL_FILE, 'utf8');
@@ -32,30 +32,29 @@ function parseSkillFile() {
   const sections = {};
   const ruleOrder = {};
 
-  // Parse the Quick Reference sections to get both section order AND rule order
-  // The section headers (### N. Title (IMPACT)) are the source of truth for ordering
-  const quickRefRegex = /### (\d+)\. ([^\n(]+)\s*\(([^)]+)\)\n\n((?:- `[^`]+`[^\n]*\n?)+)/g;
+  // Match each ### heading followed by a markdown table inside ## Rule Index
+  const sectionRegex = /### ([^\n]+)\n\| File \| Description \|\n\|[^\n]+\|\n((?:\| [^\n]+\|\n?)+)/g;
   let match;
+  let order = 0;
 
-  while ((match = quickRefRegex.exec(content)) !== null) {
-    const order = parseInt(match[1], 10);
-    const title = match[2].trim();
-    const impact = match[3].trim();
-    const rulesBlock = match[4];
+  while ((match = sectionRegex.exec(content)) !== null) {
+    order++;
+    const title = match[1].trim();
+    const tableBody = match[2];
 
-    // Extract rule filenames in order
-    const ruleRegex = /- `([^`]+)`/g;
+    // Extract rule filenames from table rows: | `references/<name>.md` | description |
+    const rowRegex = /\| `references\/([^`]+)\.md` \|/g;
     const rules = [];
-    let ruleMatch;
+    let rowMatch;
 
-    while ((ruleMatch = ruleRegex.exec(rulesBlock)) !== null) {
-      rules.push(ruleMatch[1]); // e.g., "core-types"
+    while ((rowMatch = rowRegex.exec(tableBody)) !== null) {
+      rules.push(rowMatch[1]); // e.g., "core-types"
     }
 
     // Determine the prefix from the first rule
     if (rules.length > 0) {
       const prefix = rules[0].split('-')[0];
-      sections[prefix] = { order, title, impact };
+      sections[prefix] = { order, title };
       ruleOrder[prefix] = rules;
     }
   }
@@ -137,9 +136,6 @@ function readRules() {
       ruleName,
       sectionPrefix,
       title: metadata.title || file.replace('.md', ''),
-      impact: metadata.impact || 'MEDIUM',
-      impactDescription: metadata.impactDescription || '',
-      tags: metadata.tags || '',
       content: body.trim(),
     });
   }
@@ -148,13 +144,25 @@ function readRules() {
 }
 
 /**
- * Group rules by section, ordered according to SKILL.md
+ * Group rules by section, ordered according to SKILL.md.
+ * Uses ruleOrder to assign rules to the correct section even when the
+ * filename prefix differs from the section prefix (e.g. workflow-validate
+ * listed under the "test" section).
  */
 function groupRulesBySection(rules, ruleOrder) {
+  // Build a reverse map: ruleName -> section prefix from SKILL.md
+  const ruleToSection = {};
+  for (const [prefix, ruleNames] of Object.entries(ruleOrder)) {
+    for (const name of ruleNames) {
+      ruleToSection[name] = prefix;
+    }
+  }
+
   const grouped = {};
 
   for (const rule of rules) {
-    const prefix = rule.sectionPrefix;
+    // Prefer the section assignment from SKILL.md, fall back to filename prefix
+    const prefix = ruleToSection[rule.ruleName] || rule.sectionPrefix;
     if (!grouped[prefix]) {
       grouped[prefix] = [];
     }
@@ -211,7 +219,7 @@ function generateTOC(groupedRules, sections) {
     const sectionNum = section.order;
     const rules = groupedRules[prefix];
 
-    lines.push(`${sectionNum}. [${section.title}](#${sectionNum}-${slugify(section.title)}) — **${section.impact}**`);
+    lines.push(`${sectionNum}. [${section.title}](#${sectionNum}-${slugify(section.title)})`);
 
     rules.forEach((rule, idx) => {
       const subNum = `${sectionNum}.${idx + 1}`;
@@ -230,8 +238,6 @@ function generateSectionContent(sectionNum, section, rules, prefix) {
 
   lines.push(`## ${sectionNum}. ${section.title}`);
   lines.push('');
-  lines.push(`**Impact: ${section.impact}**`);
-  lines.push('');
 
   if (SECTION_INTROS[prefix]) {
     lines.push(SECTION_INTROS[prefix]);
@@ -243,14 +249,6 @@ function generateSectionContent(sectionNum, section, rules, prefix) {
 
     lines.push(`### ${subNum} ${rule.title}`);
     lines.push('');
-
-    if (rule.impact && rule.impactDescription) {
-      lines.push(`**Impact: ${rule.impact} (${rule.impactDescription})**`);
-      lines.push('');
-    } else if (rule.impact) {
-      lines.push(`**Impact: ${rule.impact}**`);
-      lines.push('');
-    }
 
     // Process content - remove the first heading if it duplicates the title
     let content = rule.content;
@@ -338,7 +336,7 @@ function main() {
   Object.entries(sections)
     .sort((a, b) => a[1].order - b[1].order)
     .forEach(([prefix, section]) => {
-      console.log(`  ${section.order}. ${prefix} -> ${section.title} (${section.impact})`);
+      console.log(`  ${section.order}. ${prefix} -> ${section.title}`);
     });
 
   console.log('\nRule order from SKILL.md:');
