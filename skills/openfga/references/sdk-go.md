@@ -4,7 +4,7 @@ title: Go SDK
 
 ## Go SDK
 
-The `github.com/openfga/go-sdk` package provides the official OpenFGA client for Go applications.
+The [`github.com/openfga/go-sdk](https://github.com/openfga/go-sdk) package provides the official OpenFGA client for Go applications.
 
 ### Installation
 

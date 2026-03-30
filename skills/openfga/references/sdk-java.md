@@ -4,7 +4,7 @@ title: Java SDK
 
 ## Java SDK
 
-The OpenFGA Java SDK provides the official client for JVM applications. Requires Java 11+.
+The [OpenFGA Java SDK](https://github.com/openfga/java-sdk) provides the official client for JVM applications. Requires Java 17+.
 
 ### Installation
 
@@ -14,14 +14,14 @@ The OpenFGA Java SDK provides the official client for JVM applications. Requires
 <dependency>
     <groupId>dev.openfga</groupId>
     <artifactId>openfga-sdk</artifactId>
-    <version>0.7.0</version>
+    <version>0.9.7</version>
 </dependency>
 ```
 
 **Gradle:**
 
 ```groovy
-implementation 'dev.openfga:openfga-sdk:0.7.0'
+implementation 'dev.openfga:openfga-sdk:0.9.7'
 ```
 
 ### Client Initialization
@@ -289,7 +289,7 @@ var response = fgaClient.read(request).get();
 ```java
 var options = new ClientWriteOptions()
     .disableTransactions(true)
-    .transactionChunkSize(100);
+    .transactionChunkSize(5); // max requests per transaction chunk
 
 var response = fgaClient.write(request, options).get();
 ```
@@ -305,6 +305,13 @@ var options = new ClientWriteOptions()
     .onMissing(WriteRequestDeletes.OnMissingEnum.IGNORE);
 
 var response = fgaClient.write(request, options).get();
+
+// Can also be set independently for writes-only or deletes-only
+var writeOnlyOptions = new ClientWriteOptions()
+    .onDuplicate(WriteRequestWrites.OnDuplicateEnum.IGNORE);
+
+var deleteOnlyOptions = new ClientWriteOptions()
+    .onMissing(WriteRequestDeletes.OnMissingEnum.IGNORE);
 ```
 
 ### Contextual Tuples
@@ -325,11 +332,15 @@ var response = fgaClient.check(request).get();
 
 ### Retry Configuration
 
+The SDK retries on 429 and 5xx errors (up to 3 times by default, max 15). It respects `Retry-After` headers and uses exponential backoff as fallback.
+
 ```java
+import java.time.Duration;
+
 var config = new ClientConfiguration()
         .apiUrl("http://localhost:8080")
-        .maxRetries(3)
-        .minimumRetryDelay(Duration.ofMillis(250));
+        .maxRetries(3) // default: 3, maximum: 15
+        .minimumRetryDelay(Duration.ofMillis(100)); // minimum wait between retries
 
 var fgaClient = new OpenFgaClient(config);
 ```
@@ -340,4 +351,4 @@ var fgaClient = new OpenFgaClient(config);
 - **Async handling:** Use `.get()` to block or `.thenApply()` for async
 - **Object naming:** Use `._object()` (with underscore) for object parameter
 - **Retry behavior:** SDK auto-retries on 429 and 5xx errors (up to 3 times)
-- **Java version:** Requires Java 11+
+- **Java version:** Requires Java 17+

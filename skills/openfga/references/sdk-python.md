@@ -4,7 +4,7 @@ title: Python SDK
 
 ## Python SDK
 
-The `openfga_sdk` package provides the official OpenFGA client for Python applications with both async and sync support.
+The [`openfga_sdk`](https://github.com/openfga/python-sdk) package provides the official OpenFGA client for Python applications with both async and sync support.
 
 ### Installation
 

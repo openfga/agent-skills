@@ -4,7 +4,7 @@ title: JavaScript/TypeScript SDK
 
 ## JavaScript/TypeScript SDK
 
-The `@openfga/sdk` package provides the official OpenFGA client for JavaScript and TypeScript applications.
+The [@openfga/sdk](https://github.com/openfga/js-sdk) package provides the official OpenFGA client for JavaScript and TypeScript applications.
 
 ### Installation
 

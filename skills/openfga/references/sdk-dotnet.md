@@ -4,7 +4,7 @@ title: .NET SDK
 
 ## .NET SDK
 
-The `OpenFga.Sdk` package provides the official OpenFGA client for .NET applications.
+The [OpenFga.Sdk](https://github.com/openfga/dotnet-sdk) package provides the official OpenFGA client for .NET applications.
 
 ### Installation
 
