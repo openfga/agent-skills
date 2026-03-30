@@ -54,12 +54,10 @@ rg -n "<relation_name>|<relation_name> from" stores/<store>/{model.fga,store.fga
 
 **After generating models and tests:**
 
-```bash
-# Check which relations are actually tested
-grep -r "relation:" tests/*.yaml | sort | uniq
 
-# Compare against model relations
-fga model validate --file model.fga
+```bash
+# Run tests
+fga model test --tests store.fga.yaml
 ```
 
 **Benefits:**

@@ -1983,7 +1983,7 @@ fga model transform --input model.json --output model.fga
 **Example test run:**
 
 ```bash
-$ fga model test --tests authorization.fga.yaml
+$ fga model test --tests store.fga.yaml
 # Test Summary #
 Tests 1/1 passing
 Checks 5/5 passing
@@ -1993,15 +1993,15 @@ Checks 5/5 passing
 
 ```bash
 # Fail the build if tests don't pass
-fga model test --tests authorization.fga.yaml || exit 1
+fga model test --tests store.fga.yaml || exit 1
 ```
 
-You can also use the available GitHub actions. 
+You can also use the [OpenFGA Model Test GitHub actions](https://github.com/marketplace/actions/openfga-model-testing-action). 
 
 **Verbose output for debugging:**
 
 ```bash
-fga model test --tests authorization.fga.yaml --verbose
+fga model test --tests store.fga.yaml --verbose
 ```
 
 ---
@@ -2308,12 +2308,10 @@ rg -n "<relation_name>|<relation_name> from" stores/<store>/{model.fga,store.fga
 
 **After generating models and tests:**
 
-```bash
-# Check which relations are actually tested
-grep -r "relation:" tests/*.yaml | sort | uniq
 
-# Compare against model relations
-fga model validate --file model.fga
+```bash
+# Run tests
+fga model test --tests store.fga.yaml
 ```
 
 **Benefits:**
