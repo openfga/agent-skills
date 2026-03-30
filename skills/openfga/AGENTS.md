@@ -654,7 +654,7 @@ check:
 
 **Impact: LOW (use carefully)**
 
-Wildcards (`type:*`) grant access to all instances of a user type to an specfic object.
+Wildcards (`type:*`) grant access for all instances of a user type to a specific object.
 
 **Example (public documents):**
 
