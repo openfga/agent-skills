@@ -90,6 +90,7 @@ type document
   relations
     define owner: [user]
     define editor: [user]
+    define viewer: [user]
     define parent_folder: [folder]
     define org_admin: org_admin from parent_folder
 
