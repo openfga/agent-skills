@@ -3,7 +3,7 @@ name: SDK Documentation Updater
 description: Automatically updates SDK reference files in agent-skills when upstream SDK READMEs change
 on:
   schedule:
-    # Weekly on Mondays at 7:13am UTC (catches anything missed)
+    # Weekly on Mondays
     - cron: weekly on monday
   workflow_dispatch:
     inputs:
@@ -43,10 +43,15 @@ tools:
     toolsets: [default]
   edit:
   bash:
-    - "gh api repos/openfga/*/readme --jq .content"
+    - "gh api repos/openfga/js-sdk/readme --jq .content"
+    - "gh api repos/openfga/go-sdk/readme --jq .content"
+    - "gh api repos/openfga/python-sdk/readme --jq .content"
+    - "gh api repos/openfga/java-sdk/readme --jq .content"
+    - "gh api repos/openfga/dotnet-sdk/readme --jq .content"
     - "base64 -d"
     - "cat skills/openfga/references/sdk-*.md"
     - "find skills -name 'sdk-*.md'"
+    - "node scripts/build-agents-md.js"
     - "git"
 
 timeout-minutes: 30
@@ -83,22 +88,22 @@ Check the workflow inputs to decide which SDKs to process:
 
 Use the mapping below to determine which repo(s) and reference file(s) to process:
 
-| Dispatch `sdk` value | Upstream Repo | Reference File |
-|-----------------------|---------------|----------------|
+| Input `sdk` value | Upstream Repo | Reference File |
+|--------------------|---------------|----------------|
 | `js-sdk` | `openfga/js-sdk` | `skills/openfga/references/sdk-javascript.md` |
 | `go-sdk` | `openfga/go-sdk` | `skills/openfga/references/sdk-go.md` |
 | `python-sdk` | `openfga/python-sdk` | `skills/openfga/references/sdk-python.md` |
 | `java-sdk` | `openfga/java-sdk` | `skills/openfga/references/sdk-java.md` |
 | `dotnet-sdk` | `openfga/dotnet-sdk` | `skills/openfga/references/sdk-dotnet.md` |
 
-**If triggered by `repository_dispatch`**: Only fetch the single SDK from the payload.
+**If `sdk` input is set** (single SDK — typically triggered by a release via `notify-agent-skills.yml` in the SDK repo): Only fetch that one.
 
 ```bash
 # Example for a single SDK (replace <repo> with the value from the table above)
 gh api repos/openfga/<repo>/readme --jq .content | base64 -d > /tmp/<repo>-readme.md
 ```
 
-**If triggered by `schedule` or `workflow_dispatch`**: Fetch all 5.
+**If `sdk` input is empty** (scheduled run or manual dispatch without inputs): Fetch all 5.
 
 ```bash
 for repo in js-sdk go-sdk python-sdk java-sdk dotnet-sdk; do
@@ -179,7 +184,7 @@ If changes were made, create a pull request using the `create_pull_request` safe
 ## SDK Reference Updates
 
 Automated sync of SDK reference files against upstream repository READMEs.
-Trigger: [${{ github.event.inputs.sdk }} ${{ github.event.inputs.version }} | weekly schedule | manual dispatch]
+Trigger: [sdk=${{ github.event.inputs.sdk }} version=${{ github.event.inputs.version }} | weekly schedule | manual dispatch]
 
 ### Changes
 

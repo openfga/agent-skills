@@ -98,8 +98,8 @@ SDK reference files (`references/sdk-*.md`) are kept in sync with upstream SDK r
 
 ```
 openfga/java-sdk release published
-  → .github/workflows/notify-agent-skills.yml (in SDK repo)
-    → gh workflow run sdk-doc-updater.md (in this repo, with sdk=java-sdk)
+  → .github/workflows/workflow-templates/notify-agent-skills.yml (in SDK repo)
+    → gh workflow run "SDK Documentation Updater" (in this repo, with sdk=java-sdk)
       → compares upstream README vs references/sdk-java.md
         → opens PR if changes found
 ```
