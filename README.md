@@ -20,15 +20,15 @@ This skill provides guidelines and patterns for:
 
 ## Rule Categories
 
-| Category | Impact | Description |
-|----------|--------|-------------|
-| Core Concepts | CRITICAL | Types, relations, tuples, schema basics |
-| Relationship Definitions | CRITICAL | Direct, concentric, indirect patterns |
-| Testing & Validation | HIGH | `.fga.yaml` structure, assertions, CLI |
-| Model Design | HIGH | Permissions, hierarchies, naming |
-| Custom Roles | MEDIUM | User-defined and resource-specific roles |
-| Optimization | MEDIUM | Simplification, tuple minimization |
-| SDK Integration | HIGH | Language-specific client usage |
+| Category | Description |
+|----------|-------------|
+| Core | Types, relations, tuples, schema basics |
+| Relations | Direct, concentric, indirect, conditional patterns |
+| Design | Permissions, hierarchies, naming, modules |
+| Roles | Simple static, custom, and resource-specific roles |
+| Optimization | Simplification, tuple minimization, type restrictions |
+| Testing | `.fga.yaml` structure, assertions, CLI validation |
+| SDKs | Language-specific client usage |
 
 ## When This Skill Activates
 
@@ -54,35 +54,34 @@ Includes complete examples for:
 
 ```
 openfga/
-├── SKILL.md          # Quick reference and metadata
-├── AGENTS.md         # Comprehensive guide for agents
-├── README.md         # This file
-└── rules/
-    ├── core-*.md     # Core concept rules
-    ├── relation-*.md # Relationship pattern rules
-    ├── test-*.md     # Testing rules
-    ├── design-*.md   # Design pattern rules
-    ├── roles-*.md    # Custom role rules
-    ├── optimize-*.md # Optimization rules
-    ├── workflow-*.md # Workflow rules
-    └── sdk-*.md      # SDK-specific rules
+├── SKILL.md              # Skill metadata, rule index, and workflow
+├── AGENTS.md             # Generated comprehensive guide (all rules expanded)
+└── references/
+    ├── core-*.md         # Core concept references
+    ├── relation-*.md     # Relationship pattern references
+    ├── design-*.md       # Design pattern references
+    ├── roles-*.md        # Custom role references
+    ├── optimize-*.md     # Optimization references
+    ├── test-*.md         # Testing references
+    ├── workflow-*.md     # Workflow references
+    └── sdk-*.md          # SDK-specific references
 ```
 
 ## Rebuilding AGENTS.md
 
-The `AGENTS.md` file is generated from the individual rule files in `rules/`. To regenerate it after making changes:
+The `AGENTS.md` file is generated from the individual reference files. To regenerate it after making changes:
 
 ```bash
 node scripts/build-agents-md.js
 ```
 
 The script reads:
-- Section order and rule order from `skills/openfga/SKILL.md`
-- Individual rule content from `skills/openfga/rules/*.md`
+- Section order and rule order from the Rule Index tables in `skills/openfga/SKILL.md`
+- Individual rule content from `skills/openfga/references/*.md`
 
 When adding new rules:
-1. Create the rule file in `rules/` with the appropriate prefix (e.g., `core-`, `relation-`, `test-`)
-2. Add the rule to the corresponding section in `SKILL.md` under Quick Reference
+1. Create the rule file in `references/` with the appropriate prefix (e.g., `core-`, `relation-`, `test-`)
+2. Add the rule to the corresponding table in the Rule Index section of `SKILL.md`
 3. Run the build script to regenerate `AGENTS.md`
 
 ## Example Usage
