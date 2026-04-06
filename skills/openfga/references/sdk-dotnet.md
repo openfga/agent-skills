@@ -71,8 +71,7 @@ var fgaClient = new OpenFgaClient(configuration);
 **From JSON file:**
 
 ```csharp
-using System.Text.Json;
-using OpenFga.Sdk.Model;
+using OpenFga.Sdk.Client.Model;
 
 // Read and parse JSON file
 var jsonContent = await File.ReadAllTextAsync("model.json");

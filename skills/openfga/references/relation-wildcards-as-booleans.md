@@ -4,7 +4,7 @@ title: Wildcards for boolean attributes
 
 ## Wildcards for Public Access
 
-Wildcards (`type:*`) grant access a all instances of a user type to access a specfic object. They can be used to simulate boolean attributes. 
+Wildcards (`type:*`) grant access for all instances of a user type to a specific object. They can be used to simulate boolean attributes. 
 
 **Example (feature entitlements):**
 

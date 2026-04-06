@@ -23,7 +23,7 @@ type folder
   relations
     define organization: [organization]
     define parent_folder: [folder]
-    define org_admin: admin from organization
+    define org_admin: admin from organization or org_admin from parent_folder
     define owner: [user] or owner from parent_folder
     define editor: [user] or owner or editor from parent_folder
     define viewer: [user] or editor or viewer from parent_folder or member from organization

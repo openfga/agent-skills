@@ -2,7 +2,7 @@
 
 **Version 1.0.0**
 OpenFGA Community
-March 2026
+April 2026
 
 > **Note:**
 > This document is mainly for agents and LLMs to follow when authoring,
@@ -627,7 +627,7 @@ check:
 
 ### 2.6 Wildcards for Public Access
 
-Wildcards (`type:*`) grant access to all instances of a user type to an specfic object.
+Wildcards (`type:*`) grant access for all instances of a user type to a specific object.
 
 **Example (public documents):**
 
@@ -663,7 +663,7 @@ type document
 
 ### 2.7 Wildcards for boolean attributes
 
-Wildcards (`type:*`) grant access a all instances of a user type to access a specfic object. They can be used to simulate boolean attributes. 
+Wildcards (`type:*`) grant access for all instances of a user type to a specific object. They can be used to simulate boolean attributes. 
 
 **Example (feature entitlements):**
 
@@ -857,7 +857,7 @@ type folder
   relations
     define organization: [organization]
     define parent_folder: [folder]
-    define org_admin: admin from organization
+    define org_admin: admin from organization or org_admin from parent_folder
     define owner: [user] or owner from parent_folder
     define editor: [user] or owner or editor from parent_folder
     define viewer: [user] or editor or viewer from parent_folder or member from organization
@@ -1960,7 +1960,7 @@ type document
     define owner: [user]                # Only users can own
 ```
 
-If business rules imply that a resource can belong to different kind of parents, then it is OK to represent it in the model:
+If business rules imply that a resource can belong to different kinds of parents, then it is OK to represent it in the model:
 
 ```dsl.openfga
 type organization
@@ -2060,16 +2060,16 @@ tests:
 
 ```yaml
 name: Model Tests
-model_file: ./model.fga
-tuple_file: ./tuples.yaml
+model_file: model.fga
+tuple_file: tuples.yaml
 ```
 
 **Alternative when using Modular Models:**
 
 ```yaml
 name: Model Tests
-model_file: ./fga.mod
-tuple_file: ./tuples.yaml
+model_file: fga.mod
+tuple_file: tuples.yaml
 ```
 
 
@@ -2387,7 +2387,7 @@ fga model validate --file model.fga
 **Run tests:**
 
 ```bash
-fga model test --tests model.fga.yaml
+fga model test --tests store.fga.yaml
 ```
 
 **Transform between formats:**
@@ -3766,8 +3766,7 @@ var fgaClient = new OpenFgaClient(configuration);
 **From JSON file:**
 
 ```csharp
-using System.Text.Json;
-using OpenFga.Sdk.Model;
+using OpenFga.Sdk.Client.Model;
 
 // Read and parse JSON file
 var jsonContent = await File.ReadAllTextAsync("model.json");

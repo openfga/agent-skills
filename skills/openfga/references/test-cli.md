@@ -33,7 +33,7 @@ fga model validate --file model.fga
 **Run tests:**
 
 ```bash
-fga model test --tests model.fga.yaml
+fga model test --tests store.fga.yaml
 ```
 
 **Transform between formats:**

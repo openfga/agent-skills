@@ -24,7 +24,7 @@ type document
     define owner: [user]                # Only users can own
 ```
 
-If business rules imply that a resource can belong to different kind of parents, then it is OK to represent it in the model:
+If business rules imply that a resource can belong to different kinds of parents, then it is OK to represent it in the model:
 
 ```dsl.openfga
 type organization
