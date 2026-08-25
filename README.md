@@ -1,6 +1,6 @@
 # OpenFGA Agent Skills
 
-A comprehensive skill for AI agents to author, review, and refactor OpenFGA authorization models following best practices.
+Product-user and model-authoring skills for safely integrating OpenFGA into applications and designing, reviewing, and testing authorization models.
 
 ## Available Skills
 

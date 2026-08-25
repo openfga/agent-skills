@@ -121,7 +121,7 @@ Use ListUsers only when enumerating subjects is necessary:
 }
 ```
 
-Current ListUsers accepts exactly one user filter. Returned users are structured variants: `object`, `userset`, or `wildcard`; they are not plain strings. Results are unordered, bounded, and non-paginated. A returned wildcard does not prove a particular user is allowed when exclusions may apply—Check that user.
+The current server API requires exactly one `user_filters` element, even though SDK request types represent the field as a collection and some older examples show multiple entries. If the product needs multiple subject types, issue one ListUsers request per filter and combine the results under the same model and consistency policy. Returned users are structured variants: `object`, `userset`, or `wildcard`; they are not plain strings. Results are unordered, bounded, and non-paginated. A returned wildcard does not prove a particular user is allowed when exclusions may apply—Check that user.
 
 ## Authorization is not search
 
