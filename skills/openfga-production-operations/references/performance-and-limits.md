@@ -62,6 +62,8 @@ OPENFGA_SHARED_ITERATOR_LIMIT
 
 The schema marks some older cache fields as deprecated. Do not introduce a deprecated key into a new deployment. Confirm cache memory use under realistic cardinality and mutation rates.
 
+`OPENFGA_CHECK_QUERY_CACHE_ENABLED` changes consistency behavior, not only memory and latency: the current schema states that it makes Check and ListObjects eventually consistent for requests that do not use `HIGHER_CONSISTENCY`. Higher-consistency requests bypass this cache. Before enabling it, identify callers that cannot tolerate cached authorization decisions, verify their consistency option, and test behavior across the configured TTL.
+
 ## Throttling Controls
 
 The current schema exposes separate groups for:

@@ -59,9 +59,9 @@ OpenFGA publishes:
 - HTTP `GET /healthz`;
 - gRPC `grpc.health.v1.Health/Check`.
 
-These checks test datastore health. Use the appropriate protocol for load-balancer and orchestrator checks. Do not invent a separate readiness contract or treat health as a substitute for an authenticated authorization smoke test.
+These checks test datastore health. The gRPC health service explicitly bypasses OpenFGA authentication middleware, so treat health endpoints as unauthenticated and restrict them at the network layer. Use the appropriate protocol for load-balancer and orchestrator checks. Do not invent a separate readiness contract or treat health as a substitute for an authenticated authorization smoke test.
 
-The official container includes `grpc_health_probe`, and the Helm chart includes a `helm test` connection check. Inspect the release-specific artifacts before relying on exact paths or ports.
+The official container includes `grpc_health_probe`, and the Helm chart includes a plaintext `helm test` connection check. That chart test is not TLS-aware; when gRPC TLS is enabled, use a separately managed test with the required TLS and certificate options. Inspect release-specific artifacts before relying on exact paths or ports.
 
 ## Incident Evidence
 
@@ -97,5 +97,6 @@ Do not use broad redaction that destroys the relationship among identifiers need
 - [Reporting runtime issues](https://openfga.dev/docs/getting-started/setup-openfga/reporting-runtime-issues)
 - [Server telemetry Compose overlay](https://github.com/openfga/openfga/blob/main/docker-compose.override.yaml)
 - [Server configuration schema](https://github.com/openfga/openfga/blob/main/.config-schema.json)
+- [Health service authentication override](https://github.com/openfga/openfga/blob/main/pkg/server/health/health.go)
 - [Container health check](https://github.com/openfga/openfga/blob/main/Dockerfile)
 - [Helm connection test](https://github.com/openfga/helm-charts/blob/main/charts/openfga/templates/tests/test-connection.yaml)

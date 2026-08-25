@@ -65,15 +65,21 @@ Health alone is not sufficient: it primarily establishes server and datastore he
 The current official CLI form is:
 
 ```bash
-export FGA_STORE_ID="$(
+set -euo pipefail
+export NO_COLOR=1
+
+FGA_STORE_ID="$(
   fga store create --name "OpenFGA deployment smoke" |
-    jq -r '.store.id'
+    jq -er '.store.id'
 )"
+export FGA_STORE_ID
 
 fga model write --store-id="$FGA_STORE_ID" --file smoke.fga
 fga tuple write --store-id="$FGA_STORE_ID" user:smoke-reader viewer document:smoke
-fga query check --store-id="$FGA_STORE_ID" user:smoke-reader viewer document:smoke
-fga query check --store-id="$FGA_STORE_ID" user:smoke-denied viewer document:smoke
+fga query check --store-id="$FGA_STORE_ID" user:smoke-reader viewer document:smoke |
+  jq -e '.allowed == true' >/dev/null
+fga query check --store-id="$FGA_STORE_ID" user:smoke-denied viewer document:smoke |
+  jq -e '.allowed == false' >/dev/null
 ```
 
 Use a minimal `smoke.fga` model:
@@ -89,7 +95,7 @@ type document
     define viewer: [user]
 ```
 
-Require the first query to return allowed and the second to return denied. Configure the CLI to use the deployed API URL, authentication, and TLS trust through its supported configuration for the installed version. Confirm exact flags with `fga <command> --help`.
+The current CLI wraps the create response as `{"store": ...}`, so `.store.id` is intentional; `jq -e` also blocks a missing ID. The two query assertions make the script fail unless the first result is allowed and the second is denied. Configure the CLI to use the deployed API URL, authentication, and TLS trust through its supported configuration for the installed version. Confirm exact flags and response shape with the pinned `fga` CLI before automating.
 
 Do not place a preshared key or bearer token directly in a shared shell command or CI log. Use the CLI's supported configuration/environment mechanism for the installed version.
 
@@ -120,5 +126,6 @@ If rollback compatibility is not documented, stop and use the datastore restore 
 - [Environment bindings and aliases](https://github.com/openfga/openfga/blob/main/cmd/run/flags.go)
 - [Migration command](https://github.com/openfga/openfga/blob/main/cmd/migrate/migrate.go)
 - [OpenFGA CLI documentation](https://github.com/openfga/cli)
+- [CLI store-create response source](https://github.com/openfga/cli/blob/main/cmd/store/create.go)
 - [Official CLI workflow examples](https://openfga.dev/docs/getting-started/cli)
 - [Helm test template](https://github.com/openfga/helm-charts/blob/main/charts/openfga/templates/tests/test-connection.yaml)

@@ -59,11 +59,11 @@ Create an explicit table before deployment:
 | HTTP API | Application clients | Required decision | Required decision | Ingress/service policy |
 | gRPC API | Application clients | Required decision | Required decision | Service policy |
 | Metrics | Collector only | Platform-specific | Platform-specific | Internal only |
-| Health | Orchestrator/load balancer | Platform-specific | Platform-specific | Internal only |
+| Health | Orchestrator/load balancer | None in OpenFGA | Platform-specific | Internal only |
 | Profiler | Break-glass operators only | External control | Required | Disabled by default |
 | Playground | None in production | N/A | N/A | Disabled |
 
-Do not expose metrics, health, or profiler ports merely because chart values make them available. The optional Helm Ingress routes only what is configured; inspect the rendered Service and Ingress.
+The gRPC health service explicitly bypasses OpenFGA authentication middleware. Treat health endpoints as unauthenticated and require an internal network restriction. Do not expose metrics, health, or profiler ports merely because chart values make them available. The optional Helm Ingress routes only what is configured; inspect the rendered Service and Ingress.
 
 ## Secret Handling
 
@@ -78,6 +78,7 @@ Do not expose metrics, health, or profiler ports merely because chart values mak
 - [Configure authentication and TLS](https://openfga.dev/docs/getting-started/setup-openfga/configure-openfga)
 - [Experimental access control](https://openfga.dev/docs/getting-started/setup-openfga/access-control)
 - [Server configuration schema](https://github.com/openfga/openfga/blob/main/.config-schema.json)
+- [Health service authentication override](https://github.com/openfga/openfga/blob/main/pkg/server/health/health.go)
 - [Server container notes](https://github.com/openfga/openfga/blob/main/README.md)
 - [Helm secret guidance](https://github.com/openfga/helm-charts/blob/main/charts/openfga/README.md)
 - [Helm Service template](https://github.com/openfga/helm-charts/blob/main/charts/openfga/templates/service.yaml)

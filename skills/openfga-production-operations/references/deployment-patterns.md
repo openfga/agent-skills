@@ -23,7 +23,7 @@ For a read-only root filesystem, preserve a writable `/tmp` because the HTTP gat
 
 Run `openfga migrate` from the same target image before starting `openfga run`. Pass secrets using the platform's secret mechanism rather than command-line literals.
 
-The image health check uses `grpc_health_probe`. Verify its release-specific port and command from the pinned Dockerfile/image metadata.
+The image's built-in health check is a plaintext `grpc_health_probe` call to `:8081`. If the configured gRPC address or transport differs, override the container health check. For gRPC TLS, either terminate TLS before the container and keep the restricted container network plaintext, or provide a TLS-aware probe using the bundled probe's release-specific `-tls` and certificate options. Mount the required CA/client material as secrets and test the exact override; otherwise Docker can mark a healthy TLS-enabled server unhealthy.
 
 ## Compose
 
@@ -60,7 +60,7 @@ Before installing:
 7. Render Service and Ingress resources and expose only intended ports.
 8. Set termination behavior so platform grace exceeds `OPENFGA_SHUTDOWN_TIMEOUT`.
 9. Run `helm lint`, `helm template`, policy checks, and a server-side dry run or diff supported by the target cluster.
-10. Run `helm test` and authenticated API smoke tests after rollout.
+10. Run authenticated API smoke tests after rollout. Run the chart's `helm test` only when its plaintext gRPC probe matches the deployed transport; for `grpc.tls.enabled`, use a separately managed TLS-aware post-deploy probe.
 
 ### Verified Chart Paths
 
@@ -79,6 +79,7 @@ Use the paths in the pinned chart version, not a remembered values file:
 | Pod behavior | `resources`, `lifecycle`, `extraEnvVars`, `extraVolumes`, `extraVolumeMounts` |
 
 - The chart's Job/init-container migration logic applies to PostgreSQL and MySQL. Do not infer the same path for memory or SQLite.
+- Prefer `datastore.migrationType: job` for multiple serving replicas. Init-container mode runs a migration process in every Pod, so it requires explicitly serialized Pod startup.
 - `OPENFGA_SHUTDOWN_TIMEOUT` has no first-class chart value; set it through `extraEnvVars`, then coordinate it with Kubernetes termination grace.
 - Default probes use gRPC health. With gRPC TLS enabled, the chart switches to an exec probe using `grpc_health_probe`; a `custom*Probe` fully replaces chart defaults.
 - `service.port` is the default Ingress backend port, not the source for every Service port. Render the chart and compare the Ingress backend with ports derived from `http.addr`, `grpc.addr`, and any enabled auxiliary listener.
@@ -121,7 +122,7 @@ Do not deploy the placeholder values. If TLS terminates in the chart-managed pod
 
 Important chart caveats:
 
-- The chart's default datastore is `memory`, and the deployment template forces one replica for that engine.
+- The chart's default datastore is `memory`. With autoscaling disabled, the deployment template forces one replica for that engine; with autoscaling enabled it omits `spec.replicas` and the HPA can scale above one. Neither mode makes the memory engine production-safe.
 - The chart enables the Playground by default even though production guidance says to disable it.
 - Bundled Bitnami PostgreSQL and MySQL subcharts are deprecated. Follow current chart guidance for an external/managed database or a separately managed database deployment.
 - Values such as `resources`, `lifecycle`, affinity, tolerations, and topology spread pass through to Kubernetes objects. They are not OpenFGA operational guarantees.

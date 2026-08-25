@@ -52,20 +52,20 @@ https://github.com/openfga/openfga.dev/blob/main/docs/content/getting-started/se
 
 ## 3. Helm Release Sources
 
-Pin a chart version, then inspect that chart release:
+Replace `<chart-ref>` with the tag or commit for the deployed chart release:
 
 ```text
-https://github.com/openfga/helm-charts/blob/main/charts/openfga/Chart.yaml
-https://github.com/openfga/helm-charts/blob/main/charts/openfga/values.yaml
-https://github.com/openfga/helm-charts/blob/main/charts/openfga/templates/deployment.yaml
-https://github.com/openfga/helm-charts/blob/main/charts/openfga/templates/job.yaml
-https://github.com/openfga/helm-charts/blob/main/charts/openfga/templates/service.yaml
-https://github.com/openfga/helm-charts/blob/main/charts/openfga/templates/ingress.yaml
-https://github.com/openfga/helm-charts/blob/main/charts/openfga/templates/secrets.yaml
-https://github.com/openfga/helm-charts/blob/main/charts/openfga/templates/tests/test-connection.yaml
+https://github.com/openfga/helm-charts/blob/<chart-ref>/charts/openfga/Chart.yaml
+https://github.com/openfga/helm-charts/blob/<chart-ref>/charts/openfga/values.yaml
+https://github.com/openfga/helm-charts/blob/<chart-ref>/charts/openfga/templates/deployment.yaml
+https://github.com/openfga/helm-charts/blob/<chart-ref>/charts/openfga/templates/job.yaml
+https://github.com/openfga/helm-charts/blob/<chart-ref>/charts/openfga/templates/service.yaml
+https://github.com/openfga/helm-charts/blob/<chart-ref>/charts/openfga/templates/ingress.yaml
+https://github.com/openfga/helm-charts/blob/<chart-ref>/charts/openfga/templates/secrets.yaml
+https://github.com/openfga/helm-charts/blob/<chart-ref>/charts/openfga/templates/tests/test-connection.yaml
 ```
 
-`values.yaml` plus rendered templates are the source of truth for chart behavior. The README is guidance and can lag template details. Validate raw Kubernetes pass-through values against the target cluster.
+Use [`main`](https://github.com/openfga/helm-charts/tree/main/charts/openfga) only to discover current chart structure, not to validate an older deployment. Release-matched `values.yaml` plus rendered templates are the source of truth for chart behavior. The README is guidance and can lag template details. Validate raw Kubernetes pass-through values against the target cluster.
 
 ## Known Review Traps
 

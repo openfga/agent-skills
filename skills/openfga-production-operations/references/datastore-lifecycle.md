@@ -22,7 +22,7 @@ PostgreSQL has documented secondary/read-replica configuration. Do not assume an
 5. Wait for successful completion before starting or rolling serving replicas.
 6. Run datastore health and API smoke tests after rollout.
 
-The official Compose artifact demonstrates `datastore -> migrate -> openfga` ordering. The Helm chart can model migrations as a Job or init container. Use one approach deliberately; do not let every serving process race to migrate.
+The official Compose artifact demonstrates `datastore -> migrate -> openfga` ordering. In the Helm chart, `migrationType: job` creates one migration Job and can make serving Pods wait for it. `migrationType: initContainer` instead renders a migration init container into every serving Pod. Prefer the Job strategy for multi-replica production. Use init-container mode only when the rollout explicitly serializes Pod creation so migration processes cannot race.
 
 `openfga migrate --version` can select a migration target. Its existence is not a general downgrade guarantee. Do not move schema backward or roll the server back across a migration unless the relevant release documentation explicitly confirms compatibility.
 
