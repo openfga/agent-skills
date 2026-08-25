@@ -1,6 +1,6 @@
-# OpenFGA Best Practices Skill
+# OpenFGA Agent Skills
 
-A comprehensive skill for AI agents to author, review, and refactor OpenFGA authorization models following best practices.
+Agent Skills for designing OpenFGA authorization models and making compatible, testable changes to the OpenFGA CLI.
 
 ## Installation
 
@@ -10,7 +10,12 @@ npx skills add openfga/agent-skills
 
 ## What's Included
 
-This skill provides guidelines and patterns for:
+| Skill | Use it for |
+|-------|------------|
+| `openfga` | Authoring, reviewing, and testing OpenFGA authorization models, tuples, permissions, and SDK integrations |
+| `openfga-cli-development` | Developing `openfga/cli` commands, flags, configuration, output, store files, tests, and release packaging |
+
+The `openfga` modeling skill provides guidelines and patterns for:
 
 - **Authorization Model Design** - Types, relations, and permission structures
 - **Relationship Patterns** - Direct, concentric, indirect, and conditional relationships
@@ -18,7 +23,14 @@ This skill provides guidelines and patterns for:
 - **Custom Roles** - User-defined roles and role assignments
 - **SDK Integration** - Code examples for JavaScript, Go, Python, Java, and .NET
 
-## Rule Categories
+The `openfga-cli-development` skill provides durable workflows for:
+
+- **Commands & Configuration** - Cobra command structure, flags, Viper precedence, auth, and custom headers
+- **Compatibility** - Stable JSON/YAML/CSV output, errors, exit behavior, pagination, and batching
+- **Store Files & Security** - Import/export schemas and external-file traversal protections
+- **Engineering Workflow** - Unit/integration tests, generated mocks, docs/help synchronization, lint, audit, and packaging
+
+## OpenFGA Modeling Rule Categories
 
 | Category | Description |
 |----------|-------------|
@@ -30,9 +42,9 @@ This skill provides guidelines and patterns for:
 | Testing | `.fga.yaml` structure, assertions, CLI validation |
 | SDKs | Language-specific client usage |
 
-## When This Skill Activates
+## When These Skills Activate
 
-The skill triggers when working with:
+The `openfga` skill triggers when working with:
 
 - `.fga` model files
 - `.fga.yaml` test files
@@ -40,7 +52,15 @@ The skill triggers when working with:
 - Permission structures and authorization logic
 - OpenFGA SDK code in any supported language
 
-## SDK Support
+The `openfga-cli-development` skill triggers when working with:
+
+- Go code in `github.com/openfga/cli`
+- `fga` commands, flags, configuration, authentication, or custom headers
+- CLI JSON, YAML, simple JSON, or CSV output
+- Store import/export, tuple/model/query workflows, pagination, or batching
+- CLI tests, fixtures, mocks, help, documentation, linting, audits, or release packaging
+
+## OpenFGA Modeling SDK Support
 
 Includes complete examples for:
 
@@ -53,23 +73,19 @@ Includes complete examples for:
 ## File Structure
 
 ```
-openfga/
-├── SKILL.md              # Skill metadata, rule index, and workflow
-├── AGENTS.md             # Generated comprehensive guide (all rules expanded)
-└── references/
-    ├── core-*.md         # Core concept references
-    ├── relation-*.md     # Relationship pattern references
-    ├── design-*.md       # Design pattern references
-    ├── roles-*.md        # Custom role references
-    ├── optimize-*.md     # Optimization references
-    ├── test-*.md         # Testing references
-    ├── workflow-*.md     # Workflow references
-    └── sdk-*.md          # SDK-specific references
+skills/
+├── openfga/
+│   ├── SKILL.md              # Modeling metadata, rule index, and workflow
+│   ├── AGENTS.md             # Generated comprehensive modeling guide
+│   └── references/           # Modeling, testing, and SDK rules
+└── openfga-cli-development/
+    ├── SKILL.md              # CLI development workflow and reference index
+    └── references/           # Architecture, compatibility, security, and release guidance
 ```
 
-## Rebuilding AGENTS.md
+## Rebuilding the Modeling AGENTS.md
 
-The `AGENTS.md` file is generated from the individual reference files. To regenerate it after making changes:
+The modeling skill's `AGENTS.md` file is generated from its individual reference files. To regenerate it after making changes:
 
 ```bash
 node scripts/build-agents-md.js
@@ -93,11 +109,15 @@ Once installed, AI agents will automatically apply these best practices when:
 3. Writing relationship tuples
 4. Implementing permission checks in application code
 5. Setting up model tests
+6. Adding or changing an `fga` command or flag
+7. Updating CLI configuration, output, store files, or API workflows
+8. Extending CLI tests, help, documentation, or release packaging
 
 ## Resources
 
 - [OpenFGA Documentation](https://openfga.dev/docs)
 - [OpenFGA GitHub](https://github.com/openfga)
+- [OpenFGA CLI](https://github.com/openfga/cli)
 - [OpenFGA Playground](https://play.fga.dev)
 
 ## License
