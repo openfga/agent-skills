@@ -1,0 +1,25 @@
+# Drop this file into each SDK repo at .github/workflows/notify-agent-skills.yml
+#
+# Repos: openfga/js-sdk, openfga/go-sdk, openfga/python-sdk, openfga/java-sdk, openfga/dotnet-sdk
+#
+# Requires a repository secret AGENT_SKILLS_PAT with a GitHub token that has
+# `actions:write` scope on openfga/agent-skills (to trigger workflow_dispatch).
+
+name: Notify agent-skills on release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger SDK doc updater in agent-skills
+        run: |
+          gh workflow run "SDK Documentation Updater" \
+            --repo openfga/agent-skills \
+            --field sdk=${{ github.event.repository.name }} \
+            --field version=${{ github.event.release.tag_name }}
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_SKILLS_PAT }}

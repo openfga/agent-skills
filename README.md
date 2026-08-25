@@ -84,6 +84,46 @@ When adding new rules:
 2. Add the rule to the corresponding table in the Rule Index section of `SKILL.md`
 3. Run the build script to regenerate `AGENTS.md`
 
+## Automated SDK Sync
+
+SDK reference files (`references/sdk-*.md`) are kept in sync with upstream SDK repositories via a [GitHub Agentic Workflow](https://github.com/github/gh-aw).
+
+### How it works
+
+1. When an SDK repo publishes a release, it triggers the `sdk-doc-updater` workflow in this repo
+2. The workflow fetches the upstream README, compares it against the curated reference file, and updates only what changed (versions, imports, method signatures, runtime requirements)
+3. It regenerates `AGENTS.md` and opens a PR
+
+### Trigger flow
+
+```
+openfga/java-sdk release published
+  → .github/workflows/workflow-templates/notify-agent-skills.yml (in SDK repo)
+    → gh workflow run "SDK Documentation Updater" (in this repo, with sdk=java-sdk)
+      → compares upstream README vs references/sdk-java.md
+        → opens PR if changes found
+```
+
+### Workflows
+
+| File | Location | Purpose |
+|------|----------|---------|
+| `sdk-doc-updater.md` | This repo | Agentic workflow that fetches, compares, and updates SDK reference files |
+| `notify-agent-skills.yml` | Each SDK repo | Triggers `sdk-doc-updater` on release via `workflow_dispatch` |
+
+### Schedule
+
+- **On SDK release**: Only the released SDK is processed
+- **Weekly (Monday)**: All 5 SDKs are checked as a catch-all
+- **Manual**: Run from the Actions tab with optional `sdk` and `version` inputs
+
+### Setup for a new SDK repo
+
+1. Add `.github/workflows/notify-agent-skills.yml` to the SDK repo (template is in this repo)
+2. Create an `AGENT_SKILLS_PAT` secret in the SDK repo with `actions:write` on `openfga/agent-skills`
+3. Add the SDK to the mapping table in `sdk-doc-updater.md` and the Rule Index in `SKILL.md`
+4. Create the reference file at `skills/openfga/references/sdk-<language>.md`
+
 ## Example Usage
 
 Once installed, AI agents will automatically apply these best practices when:
