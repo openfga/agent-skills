@@ -1,6 +1,6 @@
-# OpenFGA Best Practices Skill
+# OpenFGA Agent Skills
 
-A comprehensive skill for AI agents to author, review, and refactor OpenFGA authorization models following best practices.
+Agent Skills for product users who model authorization with OpenFGA or diagnose an OpenFGA deployment or integration.
 
 ## Installation
 
@@ -8,7 +8,14 @@ A comprehensive skill for AI agents to author, review, and refactor OpenFGA auth
 npx skills add openfga/agent-skills
 ```
 
-## What's Included
+## Available Skills
+
+| Skill | Audience | Use it for |
+|-------|----------|------------|
+| [`openfga`](skills/openfga/SKILL.md) | **Product user** | Authoring, reviewing, and refactoring authorization models, tuples, tests, and SDK integrations |
+| [`openfga-troubleshooting`](skills/openfga-troubleshooting/SKILL.md) | **Product user** | Diagnosing unexpected authorization results, query disagreement, writes, configuration, authentication, connectivity, startup, and performance |
+
+## What's Included in the Modeling Skill
 
 This skill provides guidelines and patterns for:
 
@@ -30,15 +37,23 @@ This skill provides guidelines and patterns for:
 | Testing | `.fga.yaml` structure, assertions, CLI validation |
 | SDKs | Language-specific client usage |
 
-## When This Skill Activates
+## When the Modeling Skill Activates
 
-The skill triggers when working with:
+The `openfga` modeling skill triggers when working with:
 
 - `.fga` model files
 - `.fga.yaml` test files
 - OpenFGA relationship definitions
 - Permission structures and authorization logic
 - OpenFGA SDK code in any supported language
+
+The `openfga-troubleshooting` product-user skill triggers when diagnosing:
+
+- Unexpected allows or denies
+- Check, ListObjects, or ListUsers disagreement
+- Model or tuple write errors
+- Wrong store, model, endpoint, authentication, or SDK/CLI configuration
+- Server startup, migration, timeout, throttling, or latency problems
 
 ## SDK Support
 
@@ -52,19 +67,15 @@ Includes complete examples for:
 
 ## File Structure
 
-```
-openfga/
-├── SKILL.md              # Skill metadata, rule index, and workflow
-├── AGENTS.md             # Generated comprehensive guide (all rules expanded)
-└── references/
-    ├── core-*.md         # Core concept references
-    ├── relation-*.md     # Relationship pattern references
-    ├── design-*.md       # Design pattern references
-    ├── roles-*.md        # Custom role references
-    ├── optimize-*.md     # Optimization references
-    ├── test-*.md         # Testing references
-    ├── workflow-*.md     # Workflow references
-    └── sdk-*.md          # SDK-specific references
+```text
+skills/
+├── openfga/
+│   ├── SKILL.md          # Modeling metadata, rule index, and workflow
+│   ├── AGENTS.md         # Generated comprehensive modeling guide
+│   └── references/       # Modeling, testing, and SDK references
+└── openfga-troubleshooting/
+    ├── SKILL.md          # Product-user diagnostic workflow
+    └── references/       # Symptom trees, reproduction, and escalation guidance
 ```
 
 ## Rebuilding AGENTS.md
@@ -93,6 +104,7 @@ Once installed, AI agents will automatically apply these best practices when:
 3. Writing relationship tuples
 4. Implementing permission checks in application code
 5. Setting up model tests
+6. Diagnosing OpenFGA deployment or integration symptoms without exposing production data
 
 ## Resources
 
