@@ -1,6 +1,15 @@
-# OpenFGA Best Practices Skill
+# OpenFGA Agent Skills
 
 A comprehensive skill for AI agents to author, review, and refactor OpenFGA authorization models following best practices.
+
+## Available Skills
+
+| Skill | Audience | Focus |
+|-------|----------|-------|
+| [`openfga`](skills/openfga/SKILL.md) | Authorization model authors | Design and test types, relations, permissions, tuples, and `.fga.yaml` models |
+| [`openfga-application-integration`](skills/openfga-application-integration/SKILL.md) | **Product users: application developers integrating OpenFGA into their services** | Safely configure clients, pin stores/models, mutate tuples, query authorization, handle consistency/failures, and verify a running OpenFGA integration |
+
+The product-user integration skill complements the modeling skill; it refers model design and refactoring back to `openfga` instead of duplicating those rules.
 
 ## Installation
 
