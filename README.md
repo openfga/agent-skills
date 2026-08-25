@@ -1,6 +1,6 @@
-# OpenFGA Best Practices Skill
+# OpenFGA Agent Skills
 
-A comprehensive skill for AI agents to author, review, and refactor OpenFGA authorization models following best practices.
+Agent Skills for OpenFGA authorization modeling and ecosystem-wide change delivery.
 
 ## Installation
 
@@ -10,13 +10,25 @@ npx skills add openfga/agent-skills
 
 ## What's Included
 
-This skill provides guidelines and patterns for:
+| Skill | Use it for |
+|-------|------------|
+| [`openfga`](skills/openfga/SKILL.md) | Authoring, reviewing, testing, and refactoring OpenFGA authorization models |
+| [`openfga-cross-repo-change`](skills/openfga-cross-repo-change/SKILL.md) | Scoping and delivering API, server, CLI, SDK, language, storage, configuration, documentation, deprecation, and release changes across OpenFGA repositories |
+
+The modeling skill provides guidelines and patterns for:
 
 - **Authorization Model Design** - Types, relations, and permission structures
 - **Relationship Patterns** - Direct, concentric, indirect, and conditional relationships
 - **Testing & Validation** - `.fga.yaml` test files and CLI usage
 - **Custom Roles** - User-defined roles and role assignments
 - **SDK Integration** - Code examples for JavaScript, Go, Python, Java, and .NET
+
+The cross-repository change skill provides:
+
+- **Evidence-Based Impact Analysis** - Include or exclude repositories from real dependency and generated-artifact evidence
+- **Source-to-Consumer Mapping** - Trace API, language, server, SDK, CLI, and documentation ownership
+- **Compatibility & Rollout Planning** - Cover mixed versions, migrations, deprecations, and dependency ordering
+- **Delivery Evidence** - Track linked PRs, available versions, repository-specific validation, changelogs, and completion
 
 ## Rule Categories
 
@@ -30,7 +42,7 @@ This skill provides guidelines and patterns for:
 | Testing | `.fga.yaml` structure, assertions, CLI validation |
 | SDKs | Language-specific client usage |
 
-## When This Skill Activates
+## When the Modeling Skill Activates
 
 The skill triggers when working with:
 
@@ -39,6 +51,17 @@ The skill triggers when working with:
 - OpenFGA relationship definitions
 - Permission structures and authorization logic
 - OpenFGA SDK code in any supported language
+
+## When the Cross-Repository Skill Activates
+
+The cross-repository skill triggers when planning, implementing, reviewing, or releasing changes involving:
+
+- OpenFGA protobuf, REST API, endpoints, messages, or fields
+- Authorization language syntax or model semantics
+- Server configuration, storage, or compatibility behavior
+- CLI commands, schemas, exit behavior, or output
+- SDK generation, templates, package releases, or version bumps
+- Documentation, deprecation, rollout sequencing, or linked cross-repository PRs
 
 ## SDK Support
 
@@ -52,24 +75,20 @@ Includes complete examples for:
 
 ## File Structure
 
-```
-openfga/
-├── SKILL.md              # Skill metadata, rule index, and workflow
-├── AGENTS.md             # Generated comprehensive guide (all rules expanded)
-└── references/
-    ├── core-*.md         # Core concept references
-    ├── relation-*.md     # Relationship pattern references
-    ├── design-*.md       # Design pattern references
-    ├── roles-*.md        # Custom role references
-    ├── optimize-*.md     # Optimization references
-    ├── test-*.md         # Testing references
-    ├── workflow-*.md     # Workflow references
-    └── sdk-*.md          # SDK-specific references
+```text
+skills/
+├── openfga/
+│   ├── SKILL.md              # Modeling skill metadata, rule index, and workflow
+│   ├── AGENTS.md             # Generated comprehensive modeling guide
+│   └── references/           # Focused modeling and SDK rules
+└── openfga-cross-repo-change/
+    ├── SKILL.md              # Cross-repository impact and delivery workflow
+    └── references/           # Dependency map, compatibility, delivery, and template
 ```
 
-## Rebuilding AGENTS.md
+## Rebuilding the Modeling AGENTS.md
 
-The `AGENTS.md` file is generated from the individual reference files. To regenerate it after making changes:
+The modeling skill's `AGENTS.md` file is generated from its individual reference files. To regenerate it after making changes:
 
 ```bash
 node scripts/build-agents-md.js
@@ -93,6 +112,8 @@ Once installed, AI agents will automatically apply these best practices when:
 3. Writing relationship tuples
 4. Implementing permission checks in application code
 5. Setting up model tests
+6. Planning an API change from `openfga/api` through server, SDK, CLI, and docs consumers
+7. Determining whether a config, storage, language, CLI, or release change needs cross-repository work
 
 ## Resources
 
