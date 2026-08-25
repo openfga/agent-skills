@@ -1,6 +1,6 @@
-# OpenFGA Best Practices Skill
+# OpenFGA Agent Skills
 
-A comprehensive skill for AI agents to author, review, and refactor OpenFGA authorization models following best practices.
+Agent Skills for building with OpenFGA and contributing high-quality OpenFGA documentation.
 
 ## Installation
 
@@ -10,7 +10,14 @@ npx skills add openfga/agent-skills
 
 ## What's Included
 
-This skill provides guidelines and patterns for:
+| Skill | Use it for |
+|-------|------------|
+| [`openfga`](skills/openfga/SKILL.md) | Authoring, reviewing, testing, and integrating OpenFGA authorization models |
+| [`openfga-docs`](skills/openfga-docs/SKILL.md) | Editing and validating the Docusaurus, MDX, React, TypeScript, API reference, and agent-readable documentation in `openfga/openfga.dev` |
+
+## OpenFGA Modeling Skill
+
+The `openfga` skill provides guidelines and patterns for:
 
 - **Authorization Model Design** - Types, relations, and permission structures
 - **Relationship Patterns** - Direct, concentric, indirect, and conditional relationships
@@ -18,7 +25,7 @@ This skill provides guidelines and patterns for:
 - **Custom Roles** - User-defined roles and role assignments
 - **SDK Integration** - Code examples for JavaScript, Go, Python, Java, and .NET
 
-## Rule Categories
+### Rule Categories
 
 | Category | Description |
 |----------|-------------|
@@ -30,7 +37,7 @@ This skill provides guidelines and patterns for:
 | Testing | `.fga.yaml` structure, assertions, CLI validation |
 | SDKs | Language-specific client usage |
 
-## When This Skill Activates
+### When This Skill Activates
 
 The skill triggers when working with:
 
@@ -40,7 +47,7 @@ The skill triggers when working with:
 - Permission structures and authorization logic
 - OpenFGA SDK code in any supported language
 
-## SDK Support
+### SDK Support
 
 Includes complete examples for:
 
@@ -50,26 +57,36 @@ Includes complete examples for:
 - **Java** - `dev.openfga:openfga-sdk`
 - **.NET** - `OpenFga.Sdk`
 
-## File Structure
+## OpenFGA Documentation Skill
+
+The `openfga-docs` skill guides agents through:
+
+- Docusaurus 3 content, sidebars, navigation, redirects, anchors, and Swagger touchpoints
+- Diataxis-informed page intent and precise OpenFGA terminology
+- Runnable model, tuple, API, and CLI examples
+- Generated configuration documentation and source-of-truth boundaries
+- `/llms.txt`, `/docs/llms.txt`, `/llms-full.txt`, adjacent Markdown pages, and build validation
+- Accessible, responsive MDX and React/TypeScript documentation UI
+- Exact repository checks, local previews, PR previews, and link-check expectations
+
+It activates for documentation work in `openfga/openfga.dev`, including changes under `docs/content`, `src/components/Docs`, `docs/sidebars.js`, and `docusaurus.config.js`.
+
+## Repository Structure
 
 ```
-openfga/
-├── SKILL.md              # Skill metadata, rule index, and workflow
-├── AGENTS.md             # Generated comprehensive guide (all rules expanded)
-└── references/
-    ├── core-*.md         # Core concept references
-    ├── relation-*.md     # Relationship pattern references
-    ├── design-*.md       # Design pattern references
-    ├── roles-*.md        # Custom role references
-    ├── optimize-*.md     # Optimization references
-    ├── test-*.md         # Testing references
-    ├── workflow-*.md     # Workflow references
-    └── sdk-*.md          # SDK-specific references
+skills/
+├── openfga/
+│   ├── SKILL.md          # Modeling skill metadata, index, and workflow
+│   ├── AGENTS.md         # Generated comprehensive modeling guide
+│   └── references/       # Modeling, testing, and SDK rules
+└── openfga-docs/
+    ├── SKILL.md          # Documentation skill workflow and reference index
+    └── references/       # Authoring, generation, UI, API, and validation guidance
 ```
 
-## Rebuilding AGENTS.md
+## Rebuilding the Modeling AGENTS.md
 
-The `AGENTS.md` file is generated from the individual reference files. To regenerate it after making changes:
+The modeling skill's `AGENTS.md` file is generated from its individual reference files. To regenerate it after changing `skills/openfga`:
 
 ```bash
 node scripts/build-agents-md.js
@@ -86,13 +103,15 @@ When adding new rules:
 
 ## Example Usage
 
-Once installed, AI agents will automatically apply these best practices when:
+Once installed, AI agents can apply the appropriate skill when:
 
 1. Creating new OpenFGA models
 2. Reviewing existing authorization code
 3. Writing relationship tuples
 4. Implementing permission checks in application code
 5. Setting up model tests
+6. Authoring or reviewing pages in `openfga/openfga.dev`
+7. Updating documentation navigation, components, API references, or agent-readable output
 
 ## Resources
 
