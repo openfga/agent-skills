@@ -1,6 +1,6 @@
 ---
 name: openfga-cross-repo-change
-description: Use this skill when planning, implementing, reviewing, or releasing an OpenFGA change that may span repositories, including protobuf or REST API endpoints and fields, authorization-model language semantics, server configuration, CLI behavior or output, storage behavior, SDK generation, documentation, compatibility, deprecation, or release sequencing. It maps evidence-based impact across openfga/api, openfga/openfga, openfga/cli, openfga/openfga.dev, openfga/language, sdk-generator, and official SDKs. Use it for cross-repo impact analysis, dependency ordering, linked PRs, version bumps, rollout plans, and completion checks; not for authorization-model design alone.
+description: Use this skill when planning, implementing, reviewing, or releasing an OpenFGA change that may span repositories, including protobuf or REST API endpoints and fields, authorization-model language semantics, server configuration, CLI behavior or output, storage behavior, SDK generation, documentation, compatibility, deprecation, or release sequencing. It maps evidence-based impact across openfga/api, openfga/openfga, openfga/cli, openfga/openfga.dev, openfga/language, openfga/sdk-generator, and official SDKs. Use it for cross-repo impact analysis, dependency ordering, linked PRs, version bumps, rollout plans, and completion checks; not for authorization-model design alone.
 license: Apache-2.0
 metadata:
   author: openfga
@@ -61,7 +61,7 @@ Start with [Repository dependency map](references/repository-dependency-map.md),
 
 ### 3. Build an evidence-based impact matrix
 
-Copy [Impact plan template](references/impact-plan-template.md). For each candidate repository, set `Required` to `yes`, `no`, or `pending`; never leave it implicit.
+Copy [Impact plan template](references/impact-plan-template.md). For each candidate repository, set `Required?` to `yes`, `no`, or `pending`; never leave it implicit.
 
 Evidence may include:
 
