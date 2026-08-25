@@ -1,6 +1,6 @@
-# OpenFGA Best Practices Skill
+# OpenFGA Agent Skills
 
-A comprehensive skill for AI agents to author, review, and refactor OpenFGA authorization models following best practices.
+Agent Skills for using and operating OpenFGA.
 
 ## Installation
 
@@ -8,9 +8,20 @@ A comprehensive skill for AI agents to author, review, and refactor OpenFGA auth
 npx skills add openfga/agent-skills
 ```
 
+## Skill Discovery
+
+| Skill | Audience | Focus |
+|---|---|---|
+| `openfga` | **Product-user**: model authors and application developers | Authorization models, tuples, tests, and SDK integration |
+| `openfga-production-operations` | **Product-user**: platform engineers, operators, and SREs | Production deployment, datastore lifecycle, security, telemetry, tuning, upgrades, and incidents |
+
+These are product-user skills. They do not provide guidance for contributing to the `openfga/openfga` server.
+
 ## What's Included
 
-This skill provides guidelines and patterns for:
+### Authorization Modeling
+
+The `openfga` skill provides guidelines and patterns for:
 
 - **Authorization Model Design** - Types, relations, and permission structures
 - **Relationship Patterns** - Direct, concentric, indirect, and conditional relationships
@@ -18,7 +29,18 @@ This skill provides guidelines and patterns for:
 - **Custom Roles** - User-defined roles and role assignments
 - **SDK Integration** - Code examples for JavaScript, Go, Python, Java, and .NET
 
-## Rule Categories
+### Production Operations
+
+The `openfga-production-operations` skill covers:
+
+- **Architecture & Capacity** - Workload questions, scaling, resources, and graceful shutdown
+- **Datastore Lifecycle** - Support boundaries, migrations, pools, backup/restore, and upgrades
+- **Security & Networking** - Authentication, TLS, secrets, proxies, and exposure
+- **Observability & Incidents** - Logs, metrics, traces, health checks, evidence, and redaction
+- **Performance & Limits** - Caches, throttles, deadlines, query limits, and tuning
+- **Deployment & Validation** - Docker, Compose, Kubernetes, Helm, and smoke tests
+
+## Modeling Rule Categories
 
 | Category | Description |
 |----------|-------------|
@@ -30,15 +52,23 @@ This skill provides guidelines and patterns for:
 | Testing | `.fga.yaml` structure, assertions, CLI validation |
 | SDKs | Language-specific client usage |
 
-## When This Skill Activates
+## When These Skills Activate
 
-The skill triggers when working with:
+The modeling skill triggers when working with:
 
 - `.fga` model files
 - `.fga.yaml` test files
 - OpenFGA relationship definitions
 - Permission structures and authorization logic
 - OpenFGA SDK code in any supported language
+
+The production-operations skill triggers when working with:
+
+- OpenFGA server, datastore, migration, or upgrade plans
+- Docker, Compose, Kubernetes, or Helm deployments
+- OpenFGA authentication, TLS, secrets, and network exposure
+- Metrics, traces, logs, health checks, and runtime incidents
+- OpenFGA performance, caching, throttling, deadlines, or connection pools
 
 ## SDK Support
 
@@ -53,18 +83,14 @@ Includes complete examples for:
 ## File Structure
 
 ```
-openfga/
-├── SKILL.md              # Skill metadata, rule index, and workflow
-├── AGENTS.md             # Generated comprehensive guide (all rules expanded)
-└── references/
-    ├── core-*.md         # Core concept references
-    ├── relation-*.md     # Relationship pattern references
-    ├── design-*.md       # Design pattern references
-    ├── roles-*.md        # Custom role references
-    ├── optimize-*.md     # Optimization references
-    ├── test-*.md         # Testing references
-    ├── workflow-*.md     # Workflow references
-    └── sdk-*.md          # SDK-specific references
+skills/
+├── openfga/
+│   ├── SKILL.md              # Modeling metadata, rule index, and workflow
+│   ├── AGENTS.md             # Generated modeling guide
+│   └── references/           # Focused modeling and SDK references
+└── openfga-production-operations/
+    ├── SKILL.md              # Production lifecycle and reference index
+    └── references/           # Focused operational runbooks and source map
 ```
 
 ## Rebuilding AGENTS.md
@@ -86,13 +112,15 @@ When adding new rules:
 
 ## Example Usage
 
-Once installed, AI agents will automatically apply these best practices when:
+Once installed, AI agents will automatically apply the relevant skill when:
 
 1. Creating new OpenFGA models
 2. Reviewing existing authorization code
 3. Writing relationship tuples
 4. Implementing permission checks in application code
 5. Setting up model tests
+6. Planning or reviewing an OpenFGA production deployment
+7. Operating, tuning, upgrading, or troubleshooting OpenFGA
 
 ## Resources
 
