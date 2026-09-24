@@ -1,0 +1,13 @@
+{
+  "name": "agent-skills",
+  "version": "1.2.1",
+  "description": "OpenFGA authorization modeling best practices for AI agents: types and relations, relationship tuples, can_* permissions, type restrictions, and .fga.yaml tests.",
+  "author": {
+    "name": "OpenFGA",
+    "url": "https://github.com/openfga"
+  },
+  "homepage": "https://github.com/openfga/agent-skills",
+  "repository": "https://github.com/openfga/agent-skills",
+  "license": "Apache-2.0",
+  "keywords": ["openfga", "authorization", "fga", "rebac", "permissions"]
+}
