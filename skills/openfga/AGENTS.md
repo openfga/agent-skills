@@ -2674,10 +2674,12 @@ fga model test --tests "stores/*/*.fga.yaml"
 
 ### Adapt With the Tests Still Passing
 
+The commands below run from inside the `openfga-sample-stores` clone and put the adapted copy in `../authz`, outside the clone.
+
 **Incorrect (copying the model and leaving the tests behind):**
 
 ```bash
-cp openfga-sample-stores/stores/github/model.fga authz/model.fga
+cp stores/github/model.fga ../authz/model.fga
 # rename repo -> project, delete a few relations, ship it
 ```
 
@@ -2686,9 +2688,9 @@ The sample's tests prove that the sample works, not that your copy does. Renamin
 **Correct (copy the model with its tests, then change both together):**
 
 ```bash
-mkdir -p authz
-cp openfga-sample-stores/stores/github/{model.fga,store.fga.yaml} authz/
-fga model test --tests authz/store.fga.yaml   # green baseline before any change
+mkdir -p ../authz
+cp stores/github/{model.fga,store.fga.yaml} ../authz/
+fga model test --tests ../authz/store.fga.yaml   # green baseline before any change
 # Make one change at a time to model.fga, then update the tuples and tests in
 # store.fga.yaml to match, and re-run until green.
 ```
@@ -2767,7 +2769,11 @@ fga query list-objects --store-id "$FGA_STORE_ID" --model-id "$FGA_MODEL_ID" use
 
 The store's tests already state the expected answers. Make the same calls from the application and compare its results with those assertions.
 
-`mcp-gateway` relies on the experimental Dynamic Conditions feature. `fga model test` enables it automatically. To import it into a server, the server must be OpenFGA v1.21.0 or later, started with `openfga run --experimentals inline_expressions`.
+`mcp-gateway` relies on the experimental Dynamic Conditions feature (`$expression` conditions). `fga model test` enables it automatically, so its tests run without a server. Loading it into a server takes more:
+
+- The server must be OpenFGA v1.21.0 or later, started with `openfga run --experimentals inline_expressions`. Otherwise writing the model fails with `$expression requires the "inline_expressions" experimental feature flag`.
+- `fga store import` (CLI v0.8.1) rejects tuples conditioned with `$expression`, so it cannot import `mcp-gateway.fga.yaml` or `multi-tenant-mcp-gateway.fga.yaml`. Write the model with `fga model write`, then send those tuples to `POST /stores/{store_id}/write` with the same `condition` as in the store file.
+- `multi-tenant-mcp-gateway-intent.fga.yaml` has a store name longer than the 64-character limit, so create a store first and import into it with `--store-id`.
 
 ### Rules
 
