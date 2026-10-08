@@ -2,7 +2,7 @@
 
 **Version 1.0.0**
 OpenFGA Community
-April 2026
+October 2026
 
 > **Note:**
 > This document is mainly for agents and LLMs to follow when authoring,
@@ -58,12 +58,15 @@ Comprehensive guide for authoring OpenFGA authorization models, designed for AI 
    - 6.5 [Testing Conditions](#65-testing-conditions)
    - 6.6 [OpenFGA CLI Usage](#66-openfga-cli-usage)
    - 6.7 [Always Validate Models](#67-always-validate-models)
-7. [SDKs (for integration tasks only)](#7-sdks-for-integration-tasks-only)
-   - 7.1 [JavaScript/TypeScript SDK](#71-javascripttypescript-sdk)
-   - 7.2 [Go SDK](#72-go-sdk)
-   - 7.3 [Python SDK](#73-python-sdk)
-   - 7.4 [Java SDK](#74-java-sdk)
-   - 7.5 [.NET SDK](#75-net-sdk)
+7. [Examples (sample stores)](#7-examples-sample-stores)
+   - 7.1 [Start From the Closest Sample Store](#71-start-from-the-closest-sample-store)
+   - 7.2 [Validate Against Sample Stores](#72-validate-against-sample-stores)
+8. [SDKs (for integration tasks only)](#8-sdks-for-integration-tasks-only)
+   - 8.1 [JavaScript/TypeScript SDK](#81-javascripttypescript-sdk)
+   - 8.2 [Go SDK](#82-go-sdk)
+   - 8.3 [Python SDK](#83-python-sdk)
+   - 8.4 [Java SDK](#84-java-sdk)
+   - 8.5 [.NET SDK](#85-net-sdk)
 
 ---
 
@@ -2487,11 +2490,298 @@ This step is **not optional**. An untested authorization model may:
 Always run tests. Always report results to the user.
 
 ---
-## 7. SDKs (for integration tasks only)
+## 7. Examples (sample stores)
+
+Start from, adapt, and validate against the official OpenFGA sample stores instead of designing every model from scratch.
+
+### 7.1 Start From the Closest Sample Store
+
+The [openfga/sample-stores](https://github.com/openfga/sample-stores) repository is maintained by the OpenFGA team. It has 40 example stores, and each one comes with a model, sample tuples, and `.fga.yaml` tests that run in CI. Before you design a model for an application, find the sample store closest to the use case. Use it as a reference for structure, naming, and test coverage.
+
+**Incorrect (designing from scratch and missing a known pattern):**
+
+```fga
+model
+  schema 1.1
+
+type user
+
+type project
+  relations
+    define admin: [user]
+    define writer: [user] or admin
+    define reader: [user] or writer
+```
+
+With this model, access has to be granted one user and one project at a time. It has no teams and no organization-wide base permission. The `github` sample store already solves both.
+
+**Correct (adapted from the `github` sample store):**
+
+```fga
+model
+  schema 1.1
+
+type user
+
+type team
+  relations
+    define member: [user, team#member]
+
+type organization
+  relations
+    define owner: [user]
+    define member: [user] or owner
+    define project_reader: [user, organization#member]
+    define project_writer: [user, organization#member]
+
+type project
+  relations
+    define owner: [organization]
+    define admin: [user, team#member]
+    define writer: [user, team#member] or admin or project_writer from owner
+    define reader: [user, team#member] or writer or project_reader from owner
+    define can_push: writer
+    define can_read: reader
+```
+
+The adapted model makes four changes to the sample:
+- It renames `repo` to the application's `project`.
+- It drops the `maintainer` and `triager` roles, which the application does not need.
+- It keeps nested teams (`team#member`) and organization base roles (`project_reader from owner`).
+- It adds `can_*` permissions (see `design-permissions`).
+
+### Pick a Store by Use Case
+
+| You are building | Start from | Pattern it shows |
+|------------------|------------|------------------|
+| Your first model, step by step | `modeling-guide` | Ten steps, each adding one feature: multi-tenancy, groups, public access, relation-based attributes, super-admins, conditions, custom roles, application access, API access |
+| B2B SaaS with tenants and roles | `multitenant-rbac` | Organizations as tenants, nested groups, a fixed `admin` role plus custom roles assigned to users, groups, or other roles |
+| Platform staff or support access across tenants | `superadmin` | System admins, service applications, and help-desk access that expires through a condition |
+| Customer-defined roles | `custom-roles`, `role-assignments` | Two ways to model user-defined roles (see `roles-when-to-use`) |
+| Files, folders, and link sharing | `gdrive`, `file-storage` | Inheritance from parent folders, public access with `user:*`, sharing with `group#member` |
+| Source control or a developer platform | `github` | Nested teams and organization-wide base roles |
+| Workspaces and channels | `slack`, `chat` | Workspace roles, per-channel write and comment access, conversation membership |
+| Plans and feature gating | `entitlements` | Access to features based on the customer's plan |
+| Usage limits per plan | `advanced-entitlements` | Conditions that compare usage counts with plan limits |
+| Time-limited access | `temporal-access` | A condition based on grant time and duration |
+| Network or IP restrictions | `ip-based-access` | An `ipaddress` condition combined with relations through `and` |
+| Access based on resource attributes (status, department, region) | `abac-with-rebac`, `groups-resource-attributes`, `condition-data-types` | When to model an attribute as a relation and when as a condition, and every supported condition parameter type |
+| AI agents calling MCP tools | `mcp-gateway` | Grants per tool and per tool parameter for users and agents. Uses the experimental Dynamic Conditions feature. |
+| One large model owned by several teams | `modular` | `fga.mod` with one module per team (see `design-modules`) |
+
+If no single store matches, combine patterns from several of them, for example `multitenant-rbac` for tenants and `gdrive` for document sharing. Do not force the application into one sample.
+
+### Industry Examples
+
+Each industry store models the main resources of its vertical and includes tuples, tests, and a README that explains the use case.
+
+| Store | Resources modeled |
+|-------|-------------------|
+| `accounting` | Charts of accounts, invoices, expenses, payments, journal entries |
+| `ads` | Campaigns, ad groups, ads, creatives, reports |
+| `applicant-tracking-system` | Jobs, candidates, applications, interviews, offers |
+| `banking` | Accounts, transactions, transfer limits |
+| `calendar` | Calendars, events, scheduling links, recordings, webinars |
+| `call-center` | Calls, contacts, comments, recordings |
+| `chat` | Conversations, messages, groups, membership |
+| `crm` | Accounts, contacts, leads, opportunities, pipeline |
+| `developer-portal` | API keys, applications, developer access |
+| `ecommerce` | Stores, products, customers, orders, reviews |
+| `expenses` | Expense reports, approvals, reimbursements |
+| `file-storage` | Drives, folders, files with hierarchical permissions |
+| `healthcare` | Patients, encounters, diagnoses, treatments, medications |
+| `hospitality` | Hotels, rooms, reservations, guest services |
+| `human-resources` | Employees, teams, payroll, benefits, time off |
+| `iot` | Devices, device groups, live and recorded video |
+| `issue-tracking` | Collections, tickets, comments, attachments |
+| `knowledge-base` | Containers, articles, attachments, public content |
+| `kms` | Spaces, pages, comments, publishing workflow |
+| `lms` | Courses, classes, content, activities, grading |
+| `manufacturing` | Production lines, machines, work orders, quality reports |
+| `payment` | Payments, payouts, refunds, subscriptions |
+| `real-estate` | Properties, listings, transactions, inspections |
+
+### What Is in a Sample Store
+
+Each store lives in `stores/<name>/`. Fetch any file from `https://raw.githubusercontent.com/openfga/sample-stores/main/stores/<name>/<file>`.
+
+- `README.md` describes the use case and requirements. Some READMEs also link a docs page and a Playground (`https://play.fga.dev/sandbox/?store=<name>`).
+- `store.fga.yaml` holds the tuples and tests. The model is either inline (`model: |`) or in a separate file named by `model_file` (usually `model.fga`).
+- A few stores use a different layout:
+  - `modeling-guide` has one `step-*.fga.yaml` file per step.
+  - `mcp-gateway` has one `.fga.yaml` file per scenario.
+  - `modular` has an `fga.mod` and its module files.
+
+### Production Models From Open Source Adopters
+
+The sample-stores README also links [OpenFGA models used in open source projects](https://github.com/openfga/sample-stores#openfga-models-in-open-source-projects). Read them to see how production systems structure larger models, for example:
+
+- [Grafana](https://github.com/grafana/grafana/tree/main/pkg/services/authz/zanzana/schema)
+- [canonical/lxd](https://github.com/canonical/lxd/blob/main/lxd/auth/drivers/openfga_model.openfga) and [lxc/incus](https://github.com/lxc/incus/blob/main/internal/server/auth/driver_openfga_model.openfga)
+- [canonical/jimm](https://github.com/canonical/jimm/blob/v3/openfga/authorisation_model.fga)
+- [mindersec/minder](https://github.com/mindersec/minder/blob/main/internal/authz/model/minder.fga)
+- [theopenlane/core](https://github.com/theopenlane/core/blob/main/fga/model/fga.mod) (modular model)
+- [SigNoz](https://github.com/SigNoz/signoz/blob/main/ee/authz/openfgaschema/base.fga)
+- [Linux Foundation](https://github.com/linuxfoundation/lfx-v2-helm/blob/main/charts/lfx-platform/files/model.fga)
+
+### Rules
+
+- Adapt a sample; do not copy it. Rename types and relations to the application's domain, drop what the application does not need, and add `can_*` permissions.
+- Copy the sample's tests along with its model, and change them as you change the model (see `examples-validate-with-samples`).
+- Sample tuples use readable IDs such as `user:anne`. Production tuples should use stable identifiers that contain no personal data.
+- Read the store's README before adopting a sample that uses experimental features. For example, `mcp-gateway` needs OpenFGA v1.21.0 or later started with `--experimentals inline_expressions`.
+- Sample stores show modeling patterns, not application code. For SDK calls, see `sdk-*`.
+
+### 7.2 Validate Against Sample Stores
+
+Sample stores can be run, not just read. Run a sample's tests to see how it is expected to behave. Adapt it while keeping those tests green. Load it into a server to try API and SDK calls against realistic data. All commands below use the [OpenFGA CLI](https://github.com/openfga/cli) (see `test-cli`).
+
+### Get the Samples
+
+Clone the repository to get every store:
+
+```bash
+git clone --depth 1 https://github.com/openfga/sample-stores.git openfga-sample-stores
+cd openfga-sample-stores
+fga model test --tests "stores/github/store.fga.yaml"
+```
+
+To get a single store without cloning, fetch `store.fga.yaml` and every file it references through `model_file` or `tuple_file`:
+
+```bash
+mkdir github && cd github
+curl -sSLO https://raw.githubusercontent.com/openfga/sample-stores/main/stores/github/store.fga.yaml
+grep -E '^(model_file|tuple_file):' store.fga.yaml
+# model_file: model.fga
+curl -sSLO https://raw.githubusercontent.com/openfga/sample-stores/main/stores/github/model.fga
+fga model test --tests store.fga.yaml
+```
+
+```text
+# Test Summary #
+Tests 4/4 passing
+Checks 6/6 passing
+ListObjects 1/1 passing
+ListUsers 3/3 passing
+```
+
+`--tests` also accepts a glob, so one command can run a store split across several files, or every store:
+
+```bash
+fga model test --tests "stores/modeling-guide/*.fga.yaml"
+fga model test --tests "stores/*/*.fga.yaml"
+```
+
+### Adapt With the Tests Still Passing
+
+**Incorrect (copying the model and leaving the tests behind):**
+
+```bash
+cp openfga-sample-stores/stores/github/model.fga authz/model.fga
+# rename repo -> project, delete a few relations, ship it
+```
+
+The sample's tests prove that the sample works, not that your copy does. Renaming or removing a relation can change who gets access, and without tests nothing reports it.
+
+**Correct (copy the model with its tests, then change both together):**
+
+```bash
+mkdir -p authz
+cp openfga-sample-stores/stores/github/{model.fga,store.fga.yaml} authz/
+fga model test --tests authz/store.fga.yaml   # green baseline before any change
+# Make one change at a time to model.fga, then update the tuples and tests in
+# store.fga.yaml to match, and re-run until green.
+```
+
+Once the adapted model is in place, its tests should use the application's own types and IDs:
+
+```yaml
+name: Projects
+model_file: model.fga
+tuples:
+  - user: organization:acme
+    relation: owner
+    object: project:website
+  - user: organization:acme#member
+    relation: project_reader
+    object: organization:acme
+  - user: user:erik
+    relation: member
+    object: organization:acme
+  - user: team:frontend#member
+    relation: writer
+    object: project:website
+  - user: team:design#member
+    relation: member
+    object: team:frontend
+  - user: user:diane
+    relation: member
+    object: team:design
+tests:
+  - name: Organization base role and nested teams
+    check:
+      - user: user:erik
+        object: project:website
+        assertions:
+          can_read: true
+          can_push: false
+      - user: user:diane
+        object: project:website
+        assertions:
+          can_read: true
+          can_push: true
+      - user: user:mallory
+        object: project:website
+        assertions:
+          can_read: false
+          can_push: false
+    list_users:
+      - object: project:website
+        user_filter:
+          - type: user
+        assertions:
+          can_push:
+            users:
+              - user:diane
+```
+
+Treat the sample's tests as a coverage checklist. The `github` tests, for example, cover nested team membership, organization base roles, and role inheritance. For each scenario, either keep an equivalent test or drop it on purpose because the application does not need it. Then add tests for the application's own rules, including negative checks such as `user:mallory` above.
+
+Keep `model_file` and `tuple_file` paths inside the directory that holds the test file. Recent CLI versions reject references that escape it (`path escapes from parent`) unless you pass `--allow-external-files`.
+
+### Try API and SDK Calls Against Sample Data
+
+`fga store import` creates a store, writes the model, and writes the tuples. That gives you realistic data to call from an application, the CLI, or the HTTP API. Use a local or development server only.
+
+```bash
+export FGA_API_URL=http://localhost:8080
+OUT=$(fga store import --file stores/github/store.fga.yaml)
+FGA_STORE_ID=$(echo "$OUT" | jq -r '.store.id')
+FGA_MODEL_ID=$(echo "$OUT" | jq -r '.model.authorization_model_id')
+
+fga query check --store-id "$FGA_STORE_ID" --model-id "$FGA_MODEL_ID" user:erik admin repo:openfga/openfga
+# {"allowed":true,"resolution":""}
+fga query list-objects --store-id "$FGA_STORE_ID" --model-id "$FGA_MODEL_ID" user:anne reader repo
+# {"objects":["repo:openfga/openfga"]}
+```
+
+The store's tests already state the expected answers. Make the same calls from the application and compare its results with those assertions.
+
+`mcp-gateway` relies on the experimental Dynamic Conditions feature. `fga model test` enables it automatically. To import it into a server, the server must be OpenFGA v1.21.0 or later, started with `openfga run --experimentals inline_expressions`.
+
+### Rules
+
+- Run a sample's tests before changing anything. Any failure after that point comes from your changes.
+- Keep a `.fga.yaml` test file next to every model you adapt, and run `fga model test` after each change.
+- Do not delete a sample's test scenario unless the application deliberately does not need that behavior.
+- Import sample data only into local or development stores, never into production.
+
+---
+## 8. SDKs (for integration tasks only)
 
 SDK implementations for integrating OpenFGA into your applications.
 
-### 7.1 JavaScript/TypeScript SDK
+### 8.1 JavaScript/TypeScript SDK
 
 The [@openfga/sdk](https://github.com/openfga/js-sdk) package provides the official OpenFGA client for JavaScript and TypeScript applications.
 
@@ -2729,7 +3019,7 @@ const fgaClient = new OpenFgaClient({
 - **Retry behavior:** SDK auto-retries on 429 and 5xx errors (up to 3 times)
 - **Batch operations:** Use `correlationId` to match responses to requests
 
-### 7.2 Go SDK
+### 8.2 Go SDK
 
 The [`github.com/openfga/go-sdk](https://github.com/openfga/go-sdk) package provides the official OpenFGA client for Go applications.
 
@@ -3020,7 +3310,7 @@ fgaClient, err := NewSdkClient(&ClientConfiguration{
 - **Retry behavior:** SDK auto-retries on 429 and 5xx errors (up to 3 times)
 - **Streaming:** Use `StreamedListObjects` for large result sets
 
-### 7.3 Python SDK
+### 8.3 Python SDK
 
 The [`openfga_sdk`](https://github.com/openfga/python-sdk) package provides the official OpenFGA client for Python applications with both async and sync support.
 
@@ -3346,7 +3636,7 @@ except ApiException as e:
 - **Retry behavior:** SDK auto-retries on 429 and 5xx errors (up to 3 times)
 - **Streaming:** Use `streamed_list_objects` for large result sets
 
-### 7.4 Java SDK
+### 8.4 Java SDK
 
 The [OpenFGA Java SDK](https://github.com/openfga/java-sdk) provides the official client for JVM applications. Requires Java 17+.
 
@@ -3697,7 +3987,7 @@ var fgaClient = new OpenFgaClient(config);
 - **Retry behavior:** SDK auto-retries on 429 and 5xx errors (up to 3 times)
 - **Java version:** Requires Java 17+
 
-### 7.5 .NET SDK
+### 8.5 .NET SDK
 
 The [OpenFga.Sdk](https://github.com/openfga/dotnet-sdk) package provides the official OpenFGA client for .NET applications.
 

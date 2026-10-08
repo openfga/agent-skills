@@ -15,6 +15,7 @@ This skill provides guidelines and patterns for:
 - **Authorization Model Design** - Types, relations, and permission structures
 - **Relationship Patterns** - Direct, concentric, indirect, and conditional relationships
 - **Testing & Validation** - `.fga.yaml` test files and CLI usage
+- **Sample Store Examples** - Choosing, adapting, and validating against the official OpenFGA sample stores
 - **Custom Roles** - User-defined roles and role assignments
 - **SDK Integration** - Code examples for JavaScript, Go, Python, Java, and .NET
 
@@ -28,6 +29,7 @@ This skill provides guidelines and patterns for:
 | Roles | Simple static, custom, and resource-specific roles |
 | Optimization | Simplification, tuple minimization, type restrictions |
 | Testing | `.fga.yaml` structure, assertions, CLI validation |
+| Examples | Picking, adapting, and validating against OpenFGA sample stores |
 | SDKs | Language-specific client usage |
 
 ## When This Skill Activates
@@ -63,6 +65,7 @@ openfga/
     ├── roles-*.md        # Custom role references
     ├── optimize-*.md     # Optimization references
     ├── test-*.md         # Testing references
+    ├── examples-*.md     # Sample store references
     ├── workflow-*.md     # Workflow references
     └── sdk-*.md          # SDK-specific references
 ```
@@ -88,7 +91,7 @@ When adding new rules:
 
 Once installed, AI agents will automatically apply these best practices when:
 
-1. Creating new OpenFGA models
+1. Creating new OpenFGA models, starting from the closest sample store
 2. Reviewing existing authorization code
 3. Writing relationship tuples
 4. Implementing permission checks in application code
@@ -99,6 +102,7 @@ Once installed, AI agents will automatically apply these best practices when:
 - [OpenFGA Documentation](https://openfga.dev/docs)
 - [OpenFGA GitHub](https://github.com/openfga)
 - [OpenFGA Playground](https://play.fga.dev)
+- [OpenFGA Sample Stores](https://github.com/openfga/sample-stores)
 
 ## License
 

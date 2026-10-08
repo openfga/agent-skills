@@ -15,6 +15,7 @@ const SECTION_INTROS = {
   'relation': 'The building blocks for expressing authorization logic in OpenFGA.',
   'design': 'Design patterns that lead to maintainable and correct authorization models.',
   'test': 'Thorough testing ensures your authorization model behaves as expected.',
+  'examples': 'Start from, adapt, and validate against the official OpenFGA sample stores instead of designing every model from scratch.',
   'roles': 'Implement user-defined roles when applications need flexible permission structures.',
   'optimize': 'Optimize your models for clarity and efficiency.',
   'sdk': 'SDK implementations for integrating OpenFGA into your applications.',
