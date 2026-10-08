@@ -4,7 +4,7 @@ description: OpenFGA authorization modeling best practices for defining types an
 license: Apache-2.0
 metadata:
   author: openfga
-  version: "1.2.1"
+  version: "1.3.0"
 ---
 
 # OpenFGA Best Practices
@@ -47,6 +47,8 @@ Example test targets:
 - `check` that `user:bob` can edit their own document
 - `list_users` for `document:roadmap#can_view`
 - `list_objects` for documents `user:alice` can edit
+
+For complete, tested models of common applications (GitHub, Google Drive, Slack, multi-tenant SaaS, entitlements, and more), see `examples-sample-stores`.
 
 ## How to Use
 
@@ -112,6 +114,12 @@ When a workflow step points to a rule ID, open the matching file in `references/
 | `references/test-cli.md` | OpenFGA CLI usage |
 | `references/workflow-validate.md` | Always validate models |
 
+### Examples (sample stores)
+| File | Description |
+|------|-------------|
+| `references/examples-sample-stores.md` | Start from the closest sample store |
+| `references/examples-validate-with-samples.md` | Validate against sample stores |
+
 ### SDKs (for integration tasks only)
 | File | Description |
 |------|-------------|
@@ -124,12 +132,13 @@ When a workflow step points to a rule ID, open the matching file in `references/
 ## Recommended Workflow
 
 1. Model the resource graph.
+  If a sample store matches the use case, start from it and adapt it rather than designing from scratch.
   Define types, direct relations, inheritance edges, and `can_*` permissions.
-  Rules to check first: `core-*`, `relation-*`, `design-permissions`, `design-hierarchy`.
+  Rules to check first: `examples-sample-stores`, `core-*`, `relation-*`, `design-permissions`, `design-hierarchy`.
 
 2. Add tuples and test intent.
   Add representative tuples and cover expected behavior with `check`, `list_objects`, and `list_users` tests.
-  Rules to check next: `core-tuples`, `test-fga-yaml`, `test-check-assertions`, `test-list-objects`, `test-list-users`.
+  Rules to check next: `core-tuples`, `test-fga-yaml`, `test-check-assertions`, `test-list-objects`, `test-list-users`, `examples-validate-with-samples`.
 
 3. Review parent-child creation and deletion paths.
   Verify each parent -> child edge has create permissions on the parent and that no child permission is directly grantable unless intended.
