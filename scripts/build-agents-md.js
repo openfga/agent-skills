@@ -18,6 +18,7 @@ const SECTION_INTROS = {
   'roles': 'Implement user-defined roles when applications need flexible permission structures.',
   'optimize': 'Optimize your models for clarity and efficiency.',
   'sdk': 'SDK implementations for integrating OpenFGA into your applications.',
+  'docs': 'Use the official OpenFGA docs, HTTP API reference, and OpenAPI spec as the source of truth when integrating OpenFGA into applications.',
   'workflow': 'Essential workflow practices for working with OpenFGA models.',
 };
 
@@ -289,7 +290,7 @@ ${new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
 
 ## Abstract
 
-Comprehensive guide for authoring OpenFGA authorization models, designed for AI agents and LLMs. Covers core concepts, relationship patterns, testing methodologies, custom roles, and model optimization. Each section includes detailed explanations, real-world examples comparing incorrect vs. correct implementations, and specific guidance to ensure correct authorization modeling.
+Comprehensive guide for authoring OpenFGA authorization models, designed for AI agents and LLMs. Covers core concepts, relationship patterns, testing methodologies, custom roles, model optimization, SDK integration, and using the official docs and HTTP API reference. Each section includes detailed explanations, real-world examples comparing incorrect vs. correct implementations, and specific guidance to ensure correct authorization modeling.
 
 ---
 
@@ -319,7 +320,10 @@ ${generateTOC(groupedRules, sections)}
 2. [OpenFGA DSL Reference](https://openfga.dev/docs/configuration-language)
 3. [OpenFGA CLI](https://github.com/openfga/cli)
 4. [OpenFGA Sample Stores](https://github.com/openfga/sample-stores)
-5. [Google Zanzibar Paper](https://research.google/pubs/pub48190/)
+5. [OpenFGA Docs for LLMs (llms.txt)](https://openfga.dev/docs/llms.txt)
+6. [OpenFGA HTTP API Reference](https://openfga.dev/docs/api/service)
+7. [OpenFGA OpenAPI Spec](https://github.com/openfga/api/blob/main/docs/openapiv3/apidocs.openapi.json)
+8. [Google Zanzibar Paper](https://research.google/pubs/pub48190/)
 `;
 
   return header + sectionContents.join('') + references;

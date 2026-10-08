@@ -17,6 +17,7 @@ This skill provides guidelines and patterns for:
 - **Testing & Validation** - `.fga.yaml` test files and CLI usage
 - **Custom Roles** - User-defined roles and role assignments
 - **SDK Integration** - Code examples for JavaScript, Go, Python, Java, and .NET
+- **Docs & API Reference** - Looking up current docs via `llms.txt`, calling the HTTP API, and validating payloads against the OpenAPI spec
 
 ## Rule Categories
 
@@ -29,6 +30,7 @@ This skill provides guidelines and patterns for:
 | Optimization | Simplification, tuple minimization, type restrictions |
 | Testing | `.fga.yaml` structure, assertions, CLI validation |
 | SDKs | Language-specific client usage |
+| Docs & API Reference | `llms.txt` lookups, HTTP API request shapes, OpenAPI payload validation |
 
 ## When This Skill Activates
 
@@ -39,6 +41,7 @@ The skill triggers when working with:
 - OpenFGA relationship definitions
 - Permission structures and authorization logic
 - OpenFGA SDK code in any supported language
+- Direct calls to the OpenFGA HTTP API
 
 ## SDK Support
 
@@ -64,7 +67,8 @@ openfga/
     ├── optimize-*.md     # Optimization references
     ├── test-*.md         # Testing references
     ├── workflow-*.md     # Workflow references
-    └── sdk-*.md          # SDK-specific references
+    ├── sdk-*.md          # SDK-specific references
+    └── docs-*.md         # Docs, HTTP API, and OpenAPI references
 ```
 
 ## Rebuilding AGENTS.md
@@ -93,10 +97,14 @@ Once installed, AI agents will automatically apply these best practices when:
 3. Writing relationship tuples
 4. Implementing permission checks in application code
 5. Setting up model tests
+6. Calling the OpenFGA HTTP API or looking up current OpenFGA docs
 
 ## Resources
 
 - [OpenFGA Documentation](https://openfga.dev/docs)
+- [OpenFGA Docs for LLMs (llms.txt)](https://openfga.dev/docs/llms.txt) and [llms-full.txt](https://openfga.dev/docs/llms-full.txt)
+- [OpenFGA HTTP API Reference](https://openfga.dev/docs/api/service)
+- [OpenFGA OpenAPI Spec](https://github.com/openfga/api/blob/main/docs/openapiv3/apidocs.openapi.json)
 - [OpenFGA GitHub](https://github.com/openfga)
 - [OpenFGA Playground](https://play.fga.dev)
 
