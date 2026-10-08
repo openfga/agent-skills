@@ -91,9 +91,38 @@ validator = Draft7Validator({"$ref": f"#/components/schemas/{schema_name}", "com
 
 problems = [f"{'/'.join(map(str, e.absolute_path)) or '<root>'}: {e.message}" for e in validator.iter_errors(payload)]
 
-# The spec does not set additionalProperties: false, so flag unknown top-level fields explicitly.
-known = set(schemas[schema_name].get("properties", {}))
-problems += [f"{field}: unknown field for {schema_name}" for field in sorted(set(payload) - known)]
+
+def parts(schema):
+    """Resolve $ref and flatten allOf into a list of plain schemas."""
+    if "$ref" in schema:
+        return parts(schemas[schema["$ref"].split("/")[-1]])
+    return [schema] + [p for sub in schema.get("allOf", []) for p in parts(sub)]
+
+
+def unknown_fields(value, schema, path):
+    """The spec never sets additionalProperties: false, so flag unknown fields at every depth."""
+    flat = parts(schema)
+    if isinstance(value, list):
+        for items in (p["items"] for p in flat if "items" in p):
+            for i, item in enumerate(value):
+                yield from unknown_fields(item, items, path + [i])
+        return
+    if not isinstance(value, dict):
+        return
+    props = {k: v for p in flat for k, v in p.get("properties", {}).items()}
+    extra = next((p["additionalProperties"] for p in flat if "additionalProperties" in p), None)
+    if extra in ({}, True) or (not props and extra is None):
+        return  # free-form object, such as a condition `context`
+    for key, item in value.items():
+        if key in props:
+            yield from unknown_fields(item, props[key], path + [key])
+        elif extra is not None:
+            yield from unknown_fields(item, extra, path + [key])  # map values, such as a type's `relations`
+        else:
+            yield f"{'/'.join(map(str, path + [key]))}: unknown field"
+
+
+problems += unknown_fields(payload, {"$ref": f"#/components/schemas/{schema_name}"}, [])
 
 for problem in problems:
     print(problem)
@@ -105,9 +134,11 @@ sys.exit(1 if problems else 0)
 $ python validate_openfga.py /tmp/openfga-openapi.json ListUsersBody payload.json
 object: 'document:roadmap' is not of type 'object'
 user_filters: [{'type': 'user'}, {'type': 'group', 'relation': 'member'}] is too long
-model_id: unknown field for ListUsersBody
+model_id: unknown field
 3 problem(s)
 ```
+
+The unknown-field check walks nested objects and arrays too, because the server ignores unknown fields at every depth. For example, a misspelled `contex` inside a tuple `condition` returns `200` and stores the condition with an empty context. The script reports it as `writes/tuple_keys/0/condition/contex: unknown field`. Free-form objects such as `context` are not checked.
 
 Fix every reported problem and re-run until it prints `valid`. Schema validation checks shape, not meaning: a valid payload can still fail at runtime if a type or relation is missing from the model. Use `fga model test` for model behavior (see `workflow-validate`).
 
