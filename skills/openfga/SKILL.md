@@ -1,10 +1,10 @@
 ---
 name: openfga
-description: OpenFGA authorization modeling best practices for defining types and relations, writing relationship tuples, deriving can_* permissions, applying type restrictions and usersets, and authoring .fga.yaml check/list_objects/list_users tests. Use when authoring, reviewing, or refactoring OpenFGA models, tuples, permissions, .fga files, .fga.yaml test files, or OpenFGA SDK integrations in JavaScript, TypeScript, Go, Python, Java, or .NET.
+description: OpenFGA authorization modeling best practices for defining types and relations, writing relationship tuples, deriving can_* permissions, applying type restrictions and usersets, and authoring .fga.yaml check/list_objects/list_users tests. Use when authoring, reviewing, or refactoring OpenFGA models, tuples, permissions, .fga files, .fga.yaml test files, or OpenFGA SDK integrations in JavaScript, TypeScript, Go, Python, Java, or .NET. Also use when calling the OpenFGA HTTP API directly, validating API payloads against the OpenAPI spec, or looking up current OpenFGA docs via llms.txt.
 license: Apache-2.0
 metadata:
   author: openfga
-  version: "1.2.1"
+  version: "1.3.0"
 ---
 
 # OpenFGA Best Practices
@@ -53,6 +53,8 @@ Example test targets:
 When a workflow step points to a rule ID, open the matching file in `references/` for detailed guidance and examples.
 
 **Note:** SDK references (`sdk-*.md`) are only needed for integration tasks — skip them during pure model authoring and testing.
+
+**Note:** Docs and API references (`docs-*.md`) are also for integration tasks: looking up current docs via `llms.txt`, calling the HTTP API, and validating payloads against the OpenAPI spec.
 
 ## Rule Index
 
@@ -121,6 +123,13 @@ When a workflow step points to a rule ID, open the matching file in `references/
 | `references/sdk-java.md` | Java SDK |
 | `references/sdk-dotnet.md` | .NET SDK |
 
+### Docs & API Reference (for integration tasks)
+| File | Description |
+|------|-------------|
+| `references/docs-llms-txt.md` | Look up current docs via llms.txt |
+| `references/docs-api-reference.md` | HTTP API endpoints and request shapes |
+| `references/docs-openapi-validation.md` | Validate payloads against the OpenAPI spec |
+
 ## Recommended Workflow
 
 1. Model the resource graph.
@@ -161,6 +170,19 @@ fga model test --tests stores/<store>/store.fga.yaml
 7. Only then finalize delivery.
   For touched stores, finish only after validation and tests are green.
   Final rule to check: `workflow-validate`.
+
+## Integration Workflow
+
+When wiring OpenFGA into an application or service, start from a model that has passed the workflow above.
+
+1. Look up current behavior in the official docs instead of relying on memory: server setup, SDK client configuration, consistency, limits, and defaults.
+  Rule to check: `docs-llms-txt`.
+
+2. Call OpenFGA through an SDK when one exists for the language; otherwise call the HTTP API directly.
+  Rules to check: `sdk-*`, `docs-api-reference`.
+
+3. Validate every hand-built API payload against the OpenAPI spec before sending it. The server ignores unknown fields, so a misspelled optional field fails silently.
+  Rule to check: `docs-openapi-validation`.
 
 ## Full Compiled Document
 

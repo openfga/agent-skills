@@ -2,7 +2,7 @@
 
 **Version 1.0.0**
 OpenFGA Community
-April 2026
+October 2026
 
 > **Note:**
 > This document is mainly for agents and LLMs to follow when authoring,
@@ -14,7 +14,7 @@ April 2026
 
 ## Abstract
 
-Comprehensive guide for authoring OpenFGA authorization models, designed for AI agents and LLMs. Covers core concepts, relationship patterns, testing methodologies, custom roles, and model optimization. Each section includes detailed explanations, real-world examples comparing incorrect vs. correct implementations, and specific guidance to ensure correct authorization modeling.
+Comprehensive guide for authoring OpenFGA authorization models, designed for AI agents and LLMs. Covers core concepts, relationship patterns, testing methodologies, custom roles, model optimization, SDK integration, and using the official docs and HTTP API reference. Each section includes detailed explanations, real-world examples comparing incorrect vs. correct implementations, and specific guidance to ensure correct authorization modeling.
 
 ---
 
@@ -64,6 +64,10 @@ Comprehensive guide for authoring OpenFGA authorization models, designed for AI 
    - 7.3 [Python SDK](#73-python-sdk)
    - 7.4 [Java SDK](#74-java-sdk)
    - 7.5 [.NET SDK](#75-net-sdk)
+8. [Docs & API Reference (for integration tasks)](#8-docs-api-reference-for-integration-tasks)
+   - 8.1 [Look Up Current Docs via llms.txt](#81-look-up-current-docs-via-llmstxt)
+   - 8.2 [HTTP API Reference](#82-http-api-reference)
+   - 8.3 [Validate API Payloads Against the OpenAPI Spec](#83-validate-api-payloads-against-the-openapi-spec)
 
 ---
 
@@ -3996,10 +4000,418 @@ var response = await fgaClient.Check(body, options);
 - **Retry-After:** SDK respects the `Retry-After` header with exponential backoff
 
 ---
+## 8. Docs & API Reference (for integration tasks)
+
+Use the official OpenFGA docs, HTTP API reference, and OpenAPI spec as the source of truth when integrating OpenFGA into applications.
+
+### 8.1 Look Up Current Docs via llms.txt
+
+When an integration task goes beyond the rules in this skill (running the server, configuring an SDK client, API behavior, consistency, production tuning), look it up in the official OpenFGA documentation instead of answering from memory. The docs publish machine-readable entry points designed for LLMs and agents.
+
+| Resource | URL | Use it for |
+|----------|-----|------------|
+| Docs index | `https://openfga.dev/docs/llms.txt` | Small index (~30 KB) of every docs page with a one-line summary. Fetch this first to find the right page. |
+| Full docs | `https://openfga.dev/docs/llms-full.txt` | Every docs page concatenated into one Markdown file (~900 KB). Download and search it; do not load it whole into context. |
+| Single page as Markdown | `https://openfga.dev/docs/<path>.md` | Any docs page, as Markdown, by appending `.md` to its URL. |
+
+**Incorrect (guessing version-sensitive details):**
+
+```text
+"The default ListObjects result limit is 100, and BatchCheck accepts up to 1000 checks."
+```
+
+Configuration flags, defaults, experimental APIs, and SDK method names change between releases. Guessing them produces broken integrations.
+
+**Correct (look it up, then cite the page):**
+
+```text
+1. Fetch https://openfga.dev/docs/llms.txt
+2. Find "OpenFGA Configuration Options" -> https://openfga.dev/docs/getting-started/setup-openfga/configuration.md
+3. Read the defaults: OPENFGA_LIST_OBJECTS_MAX_RESULTS = 1000, OPENFGA_MAX_CHECKS_PER_BATCH_CHECK = 50
+4. Answer and link https://openfga.dev/docs/getting-started/setup-openfga/configuration
+```
+
+### Lookup Workflow
+
+1. Fetch `llms.txt` and pick the page(s) whose title or summary matches the task. Links in `llms.txt` already end in `.md`.
+2. Fetch only those pages.
+3. Use `llms-full.txt` only when you need to search for a term across all pages. Each page in it starts with `# <Title>` followed by a `Source: <url>` line, so you can trace a match back to its page:
+
+```bash
+curl -sSL https://openfga.dev/docs/llms-full.txt -o /tmp/openfga-llms-full.txt
+grep -n "HIGHER_CONSISTENCY" /tmp/openfga-llms-full.txt
+grep -n "^Source: " /tmp/openfga-llms-full.txt   # page boundaries
+```
+
+4. When explaining behavior to the user, link the human-readable page URL (without `.md`).
+
+### Where to Look for Common Adopter Tasks
+
+All paths are relative to `https://openfga.dev/docs/`. Append `.md` to fetch as Markdown.
+
+| Task | Docs pages |
+|------|------------|
+| Run an OpenFGA server | `getting-started/setup-openfga/docker`, `getting-started/setup-openfga/kubernetes`, `getting-started/setup-openfga/configuration` |
+| Run OpenFGA in production | `best-practices/running-in-production` |
+| Install and configure an SDK client | `getting-started/install-sdk`, `getting-started/setup-sdk-client` |
+| Create a store and write a model | `getting-started/create-store`, `getting-started/configure-model`, `getting-started/immutable-models` |
+| Write and delete tuples | `getting-started/update-tuples`, `interacting/managing-user-access`, `interacting/managing-relationships-between-objects` |
+| Check, ListObjects, ListUsers | `getting-started/perform-check`, `getting-started/perform-list-objects`, `getting-started/perform-list-users`, `interacting/relationship-queries` |
+| Contextual tuples and token claims | `interacting/contextual-tuples`, `modeling/token-claims-contextual-tuples` |
+| Consistency and caching | `interacting/consistency` |
+| Model IDs and PII in tuples | `getting-started/tuples-api-best-practices` |
+| Filter search results by permission | `interacting/search-with-permissions` |
+| Sync tuple changes to other systems | `interacting/read-tuple-changes` |
+| Integrate with a web framework | `getting-started/framework` |
+| SDK telemetry (OpenTelemetry) | `getting-started/configure-telemetry` |
+| Use the CLI and store files | `getting-started/cli`, `modeling/store-file-format`, `modeling/testing` |
+| Change a model already in production | `modeling/migrating/overview` |
+| Plan adoption and data ownership | `best-practices/adoption-patterns`, `best-practices/source-of-truth` |
+| AI agents, RAG, MCP servers | `use-cases/overview` |
+| Learn from production adopters | `adopters/overview` |
+| HTTP API reference | `api/service/...` (see `docs-api-reference`) |
+
+### Rules
+
+- Prefer the docs over memory for anything version-sensitive: configuration flags and defaults, experimental features, SDK method names, and API limits.
+- Docs examples use readable identifiers like `user:anne`. In production, never put personal data in tuple identifiers (see `getting-started/tuples-api-best-practices`).
+- Quote only the parts of a page you need; do not paste whole pages into the conversation.
+- If the docs and this skill disagree on API behavior, the docs and the OpenAPI spec win (see `docs-openapi-validation`).
+
+### 8.2 HTTP API Reference
+
+The SDKs and the `fga` CLI all wrap the same OpenFGA HTTP API. Prefer an SDK for application code (see `sdk-*`), but use the API reference when you need the exact wire format: calling the API directly (curl, `fetch`, an HTTP client in a language without an SDK), building a gateway or proxy, or debugging what an SDK actually sends.
+
+Every endpoint has a reference page at `https://openfga.dev/docs/api/service/<group>/<operation>`. Append `.md` to get the page as Markdown; it embeds the OpenAPI definition for that endpoint (parameters, request body, responses). For example: `https://openfga.dev/docs/api/service/stores/list-all-stores.md`.
+
+### Endpoint Map
+
+All paths are relative to your OpenFGA API URL (for example `http://localhost:8080`). Docs pages are relative to `https://openfga.dev/docs/api/service/`.
+
+| Operation | Method and path | Docs page |
+|-----------|-----------------|-----------|
+| ListStores | `GET /stores` | `stores/list-all-stores` |
+| CreateStore | `POST /stores` | `stores/create-a-store` |
+| GetStore | `GET /stores/{store_id}` | `stores/get-a-store` |
+| DeleteStore | `DELETE /stores/{store_id}` | `stores/delete-a-store` |
+| ReadAuthorizationModels | `GET /stores/{store_id}/authorization-models` | `authorization-models/get-all-authorization-models` |
+| WriteAuthorizationModel | `POST /stores/{store_id}/authorization-models` | `authorization-models/create-a-new-authorization-model` |
+| ReadAuthorizationModel | `GET /stores/{store_id}/authorization-models/{id}` | `authorization-models/get-an-authorization-model-by-its-id` |
+| Write | `POST /stores/{store_id}/write` | `relationship-tuples/add-or-delete-tuples` |
+| Read | `POST /stores/{store_id}/read` | `relationship-tuples/get-stored-relationship-tuples` |
+| ReadChanges | `GET /stores/{store_id}/changes` | `relationship-tuples/get-all-tuple-changes` |
+| Check | `POST /stores/{store_id}/check` | `relationship-queries/check-user-authorization` |
+| BatchCheck | `POST /stores/{store_id}/batch-check` | `relationship-queries/check-multiple-authorizations-in-a-single-request` |
+| ListObjects | `POST /stores/{store_id}/list-objects` | `relationship-queries/list-objects-a-user-is-related-to` |
+| StreamedListObjects | `POST /stores/{store_id}/streamed-list-objects` | `relationship-queries/stream-all-objects-with-a-user-relationship` |
+| ListUsers | `POST /stores/{store_id}/list-users` | `relationship-queries/list-all-users-with-a-relationship-to-an-object` |
+| Expand | `POST /stores/{store_id}/expand` | `relationship-queries/expand-relationships-in-userset-tree-format` |
+| ReadAssertions | `GET /stores/{store_id}/assertions/{authorization_model_id}` | `assertions/get-assertions-for-a-model` |
+| WriteAssertions | `PUT /stores/{store_id}/assertions/{authorization_model_id}` | `assertions/upsert-assertions-for-a-model` |
+
+The experimental [AuthZEN](https://openfga.dev/docs/interacting/authzen) endpoints (`/stores/{store_id}/access/v1/...` and `/.well-known/authzen-configuration/{store_id}`) are documented under `authzenservice/`. Only use them when the user explicitly asks for AuthZEN, and confirm the server has the feature enabled.
+
+### Request Essentials
+
+The API reference uses `snake_case` field names, even when an SDK exposes `camelCase` or `PascalCase` properties. Unknown fields are silently ignored, so a typo in an optional field (for example `model_id` instead of `authorization_model_id`) does not fail; validate payloads before sending (see `docs-openapi-validation`).
+
+**Check:**
+
+```bash
+curl -sS -X POST "$FGA_API_URL/stores/$FGA_STORE_ID/check" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "authorization_model_id": "'"$FGA_MODEL_ID"'",
+    "tuple_key": {
+      "user": "user:anne",
+      "relation": "can_view",
+      "object": "document:roadmap"
+    }
+  }'
+# {"allowed":true,"resolution":""}
+```
+
+If the server has authentication enabled, add `-H "Authorization: Bearer $FGA_API_TOKEN"`.
+
+**Write (add and remove tuples in one transaction):**
+
+```json
+{
+  "authorization_model_id": "01G50QVV17PECNVAHX1GG4Y5NC",
+  "writes": {
+    "tuple_keys": [
+      { "user": "user:anne", "relation": "owner", "object": "document:roadmap" }
+    ],
+    "on_duplicate": "ignore"
+  },
+  "deletes": {
+    "tuple_keys": [
+      { "user": "user:bob", "relation": "owner", "object": "document:roadmap" }
+    ],
+    "on_missing": "ignore"
+  }
+}
+```
+
+**BatchCheck (results are keyed by `correlation_id`):**
+
+```json
+{
+  "authorization_model_id": "01G50QVV17PECNVAHX1GG4Y5NC",
+  "checks": [
+    {
+      "correlation_id": "anne-view-roadmap",
+      "tuple_key": { "user": "user:anne", "relation": "can_view", "object": "document:roadmap" }
+    },
+    {
+      "correlation_id": "anne-edit-roadmap",
+      "tuple_key": { "user": "user:anne", "relation": "can_edit", "object": "document:roadmap" }
+    }
+  ]
+}
+```
+
+**ListUsers (`object` is an object, not a string; exactly one user filter):**
+
+```json
+{
+  "authorization_model_id": "01G50QVV17PECNVAHX1GG4Y5NC",
+  "object": { "type": "document", "id": "roadmap" },
+  "relation": "can_view",
+  "user_filters": [{ "type": "user" }]
+}
+```
+
+### Common Mistakes
+
+**Incorrect (contextual tuples shape copied from Check into ListUsers):**
+
+```json
+{
+  "object": { "type": "document", "id": "roadmap" },
+  "relation": "can_view",
+  "user_filters": [{ "type": "user" }],
+  "contextual_tuples": {
+    "tuple_keys": [{ "user": "user:anne", "relation": "member", "object": "group:eng" }]
+  }
+}
+```
+
+**Correct:**
+
+Check, BatchCheck items, Expand, ListObjects, and StreamedListObjects wrap contextual tuples in `{"tuple_keys": [...]}`. ListUsers takes a plain array.
+
+```json
+{
+  "object": { "type": "document", "id": "roadmap" },
+  "relation": "can_view",
+  "user_filters": [{ "type": "user" }],
+  "contextual_tuples": [
+    { "user": "user:anne", "relation": "member", "object": "group:eng" }
+  ]
+}
+```
+
+**Other rules:**
+
+- Always send `authorization_model_id` on Check, BatchCheck, ListObjects, ListUsers, Expand, and Write. It avoids a lookup of the latest model and keeps behavior stable until you deliberately roll out a new model (see `getting-started/tuples-api-best-practices` in `docs-llms-txt`).
+- `consistency` is `MINIMIZE_LATENCY` (the default) or `HIGHER_CONSISTENCY`. `HIGHER_CONSISTENCY` skips the cache and adds latency; use it only when a query must reflect a write made moments earlier, not on every request.
+- Write is transactional and, by default, not idempotent: writing an existing tuple or deleting a missing one fails the whole request. Set `on_duplicate: "ignore"` / `on_missing: "ignore"` when retries or replays are expected.
+- Read is paginated (`page_size` 1-100): loop until `continuation_token` is empty. ReadChanges returns the same `continuation_token` when there are no newer changes; persist it and poll with it later instead of looping until empty.
+- ListObjects returns at most `OPENFGA_LIST_OBJECTS_MAX_RESULTS` results (default 1000) within `OPENFGA_LIST_OBJECTS_DEADLINE` (default 3s), unordered. Use StreamedListObjects when you need every result.
+- WriteAuthorizationModel returns `201` with `authorization_model_id`. Models are immutable; store and deploy that ID instead of relying on "latest".
+
+### Error Responses
+
+| Status | Meaning | What to do |
+|--------|---------|------------|
+| 400 | Invalid input. Body is `{"code": "<ErrorCode>", "message": "..."}`, e.g. `validation_error`, `invalid_tuple`, `write_failed_due_to_invalid_input` (duplicate write or missing delete), `authorization_model_not_found`, `latest_authorization_model_not_found` (store has no model, or wrong `store_id`) | Fix the request; do not retry unchanged |
+| 401 / 403 | Not authenticated / forbidden | Check the API token or client credentials |
+| 404 | Unknown path (`undefined_endpoint`) or store (`store_id_not_found`) | Check the API URL and `store_id` |
+| 409 | Transaction conflict | Retry with backoff |
+| 422 | Request throttled and timed out | Retry with backoff; reduce concurrency |
+| 500 | Internal error | Retry with backoff; report if persistent |
+
+To validate payloads and look up exact field names, limits, and error codes, use the OpenAPI spec (see `docs-openapi-validation`).
+
+### 8.3 Validate API Payloads Against the OpenAPI Spec
+
+The OpenFGA HTTP API is defined by an OpenAPI 3.0 spec maintained in the [openfga/api](https://github.com/openfga/api) repository. Treat it as the source of truth for endpoint paths, field names, required fields, enums, and length limits.
+
+- Spec (browse): `https://github.com/openfga/api/blob/main/docs/openapiv3/apidocs.openapi.json`
+- Spec (raw JSON): `https://raw.githubusercontent.com/openfga/api/main/docs/openapiv3/apidocs.openapi.json`
+
+Use it when you write raw HTTP requests, build a client or proxy, review SDK-generated payloads, or debug a `400` response. Do not invent field names from memory: SDKs rename fields (`authorizationModelId`, `AuthorizationModelId`), but the spec and docs use `snake_case`. Validate before sending, because the server silently ignores unknown fields: a misspelled optional field such as `model_id` returns `200` and quietly falls back to the latest model.
+
+**Incorrect (payload written from memory, never checked):**
+
+```json
+{
+  "model_id": "01G50QVV17PECNVAHX1GG4Y5NC",
+  "object": "document:roadmap",
+  "relation": "can_view",
+  "user_filters": [{ "type": "user" }, { "type": "group", "relation": "member" }]
+}
+```
+
+Three problems: `object` must be `{type, id}`, ListUsers accepts exactly one user filter, and `model_id` is not a field. The server rejects the first two with a `400`, but silently ignores `model_id` and evaluates against the latest model. The schema alone does not flag the misspelled field; the script below checks for it.
+
+**Correct (validated against `ListUsersBody`):**
+
+```json
+{
+  "authorization_model_id": "01G50QVV17PECNVAHX1GG4Y5NC",
+  "object": { "type": "document", "id": "roadmap" },
+  "relation": "can_view",
+  "user_filters": [{ "type": "user" }]
+}
+```
+
+### Look Up Operations and Schemas with jq
+
+```bash
+SPEC_URL=https://raw.githubusercontent.com/openfga/api/main/docs/openapiv3/apidocs.openapi.json
+curl -sSL "$SPEC_URL" -o /tmp/openfga-openapi.json
+
+# Every operation: METHOD path operationId
+jq -r '.paths | to_entries[] | .key as $p | .value | to_entries[]
+  | "\(.key | ascii_upcase) \($p) \(.value.operationId)"' /tmp/openfga-openapi.json
+
+# Request body schema name for an operation
+jq -r '.paths["/stores/{store_id}/list-users"].post.requestBody.content["application/json"].schema["$ref"]' /tmp/openfga-openapi.json
+# #/components/schemas/ListUsersBody
+
+# Fields, required list, and limits for a schema
+jq '.components.schemas.ListUsersBody | {required, properties: (.properties | map_values(del(.description)))}' /tmp/openfga-openapi.json
+
+# All input error codes a 400 response can return
+jq -r '.components.schemas.ErrorCode.enum[]' /tmp/openfga-openapi.json
+```
+
+### Validate a Payload
+
+Request bodies map to these schemas:
+
+| Operation | Schema |
+|-----------|--------|
+| CreateStore | `CreateStoreRequest` |
+| WriteAuthorizationModel | `WriteAuthorizationModelBody` |
+| Write | `WriteBody` |
+| Read | `ReadBody` |
+| Check | `CheckBody` |
+| BatchCheck | `BatchCheckBody` |
+| ListObjects | `ListObjectsBody` |
+| StreamedListObjects | `StreamedListObjectsBody` |
+| ListUsers | `ListUsersBody` |
+| Expand | `ExpandBody` |
+| WriteAssertions | `WriteAssertionsBody` |
+
+Save this as `validate_openfga.py` and run it with Python and `jsonschema` (`pip install jsonschema`):
+
+```python
+import json
+import sys
+
+from jsonschema import Draft7Validator
+
+spec = json.load(open(sys.argv[1]))
+schema_name = sys.argv[2]
+payload = json.load(open(sys.argv[3]))
+
+schemas = spec["components"]["schemas"]
+validator = Draft7Validator({"$ref": f"#/components/schemas/{schema_name}", "components": spec["components"]})
+
+problems = [f"{'/'.join(map(str, e.absolute_path)) or '<root>'}: {e.message}" for e in validator.iter_errors(payload)]
+
+
+def parts(schema):
+    """Resolve $ref and flatten allOf into a list of plain schemas."""
+    if "$ref" in schema:
+        return parts(schemas[schema["$ref"].split("/")[-1]])
+    return [schema] + [p for sub in schema.get("allOf", []) for p in parts(sub)]
+
+
+def unknown_fields(value, schema, path):
+    """The spec never sets additionalProperties: false, so flag unknown fields at every depth."""
+    flat = parts(schema)
+    if isinstance(value, list):
+        for items in (p["items"] for p in flat if "items" in p):
+            for i, item in enumerate(value):
+                yield from unknown_fields(item, items, path + [i])
+        return
+    if not isinstance(value, dict):
+        return
+    props = {k: v for p in flat for k, v in p.get("properties", {}).items()}
+    extra = next((p["additionalProperties"] for p in flat if "additionalProperties" in p), None)
+    if extra in ({}, True) or (not props and extra is None):
+        return  # free-form object, such as a condition `context`
+    for key, item in value.items():
+        if key in props:
+            yield from unknown_fields(item, props[key], path + [key])
+        elif extra is not None:
+            yield from unknown_fields(item, extra, path + [key])  # map values, such as a type's `relations`
+        else:
+            yield f"{'/'.join(map(str, path + [key]))}: unknown field"
+
+
+problems += unknown_fields(payload, {"$ref": f"#/components/schemas/{schema_name}"}, [])
+
+for problem in problems:
+    print(problem)
+print("valid" if not problems else f"{len(problems)} problem(s)")
+sys.exit(1 if problems else 0)
+```
+
+```bash
+$ python validate_openfga.py /tmp/openfga-openapi.json ListUsersBody payload.json
+object: 'document:roadmap' is not of type 'object'
+user_filters: [{'type': 'user'}, {'type': 'group', 'relation': 'member'}] is too long
+model_id: unknown field
+3 problem(s)
+```
+
+The unknown-field check walks nested objects and arrays too, because the server ignores unknown fields at every depth. For example, a misspelled `contex` inside a tuple `condition` returns `200` and stores the condition with an empty context. The script reports it as `writes/tuple_keys/0/condition/contex: unknown field`. Free-form objects such as `context` are not checked.
+
+Fix every reported problem and re-run until it prints `valid`. Schema validation checks shape, not meaning: a valid payload can still fail at runtime if a type or relation is missing from the model. Use `fga model test` for model behavior (see `workflow-validate`).
+
+### Constraints to Check
+
+From the spec:
+
+| Field | Constraint |
+|-------|------------|
+| Tuple `user` | String, max 512 characters: `type:id`, `type:id#relation`, or `type:*` |
+| Tuple `relation` | String, max 50 characters |
+| Tuple `object` | String, max 256 characters: `type:id` |
+| `condition.name` | Max 256 characters; `condition.context` is a JSON object of the condition's parameters |
+| `contextual_tuples` | Max 100 tuples. `{"tuple_keys": [...]}` everywhere except ListUsers, which takes a plain array |
+| `consistency` | `MINIMIZE_LATENCY` (default) or `HIGHER_CONSISTENCY` |
+| Write `on_duplicate` / `on_missing` | `error` (default) or `ignore` |
+| Read `page_size` | 1 to 100 |
+| ListUsers `object` | Object `{"type": "...", "id": "..."}`, not a string |
+| ListUsers `user_filters` | Exactly 1 item: `{"type": "user"}` or `{"type": "group", "relation": "member"}` |
+| BatchCheck `correlation_id` | Required and unique per item; must match `^[\w\d-]{1,36}$`. This rule is only in the description, so the validator above does not enforce it |
+
+Server-side limits are configuration, not part of the spec. Defaults (confirm in `getting-started/setup-openfga/configuration`, see `docs-llms-txt`):
+
+| Setting | Default |
+|---------|---------|
+| `OPENFGA_MAX_TUPLES_PER_WRITE` (writes + deletes in one Write) | 100 |
+| `OPENFGA_MAX_CHECKS_PER_BATCH_CHECK` | 50 |
+| `OPENFGA_LIST_OBJECTS_MAX_RESULTS` / `OPENFGA_LIST_USERS_MAX_RESULTS` | 1000 |
+| `OPENFGA_LIST_OBJECTS_DEADLINE` / `OPENFGA_LIST_USERS_DEADLINE` | 3s |
+| `OPENFGA_MAX_TYPES_PER_AUTHORIZATION_MODEL` | 100 |
+
+SDKs split large BatchCheck calls and, in non-transaction mode, large writes into chunks for you. Raw HTTP clients must chunk themselves.
+
+---
 ## References
 
 1. [OpenFGA Documentation](https://openfga.dev/docs)
 2. [OpenFGA DSL Reference](https://openfga.dev/docs/configuration-language)
 3. [OpenFGA CLI](https://github.com/openfga/cli)
 4. [OpenFGA Sample Stores](https://github.com/openfga/sample-stores)
-5. [Google Zanzibar Paper](https://research.google/pubs/pub48190/)
+5. [OpenFGA Docs for LLMs (llms.txt)](https://openfga.dev/docs/llms.txt)
+6. [OpenFGA HTTP API Reference](https://openfga.dev/docs/api/service)
+7. [OpenFGA OpenAPI Spec](https://github.com/openfga/api/blob/main/docs/openapiv3/apidocs.openapi.json)
+8. [Google Zanzibar Paper](https://research.google/pubs/pub48190/)
